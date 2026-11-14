@@ -4,171 +4,520 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Olist BI Dashboard</title>
+<link rel="icon" href="data:,">
 <style>
   :root {
-    --navy: #1F3864; --blue: #4472C4; --orange: #ED7D31; --grey: #A5A5A5; --gold: #FFC000;
-    --sky: #5B9BD5; --green: #70AD47; --red: #C00000;
-    --tile: #DDEBF7; --tile-line: #9DC3E6; --line: #BFBFBF; --bg: #F2F2F2; --text: #262626; --muted: #595959;
+    --navy: #1F3864; --blue: #4472C4; --orange: #ED7D31; --red: #C00000; --green: #2E7D32;
+    --tile: #DDEBF7; --tile-line: #9DC3E6; --line: #BFBFBF; --bg: #F2F2F2; --text: #262626; --muted: #595959; --slicer: #F7F7F7;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Calibri, "Segoe UI", Arial, sans-serif; }
   header { background: var(--navy); color: #fff; padding: 14px 24px; }
   header h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
   header p { margin: 2px 0 0; font-size: 13px; color: #D9E1F2; }
-  nav { background: #fff; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; padding: 0 16px; position: sticky; top: 0; z-index: 5; }
-  nav button { border: 0; background: none; padding: 11px 14px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+  nav { background: #fff; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
+  nav button { border: 0; background: none; padding: 11px 14px; font: inherit; font-size: 13.5px; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
   nav button:hover { color: var(--navy); }
   nav button.on { color: var(--navy); font-weight: 700; border-bottom-color: var(--blue); }
-  main { max-width: 1320px; margin: 0 auto; padding: 18px 16px 40px; }
-  .title { background: var(--navy); color: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; align-items: baseline; }
+  #loading { padding: 60px; text-align: center; color: var(--muted); }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 14px; align-items: start; }
+  aside { position: sticky; top: 56px; display: flex; flex-direction: column; gap: 10px; }
+  .slicer { background: var(--slicer); border: 1px solid var(--line); padding: 8px 10px 10px; position: relative; }
+  .slicer .h { font-weight: 700; color: var(--navy); font-size: 13px; margin-bottom: 5px; }
+  .sl-btn { width: 100%; text-align: left; background: #fff; border: 1px solid var(--line); padding: 5px 24px 5px 8px; font: inherit; font-size: 13px; cursor: pointer;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+  .sl-btn::after { content: ""; position: absolute; right: 9px; top: 50%; margin-top: -2px; border: 5px solid transparent; border-top-color: var(--muted); }
+  .sl-pop { display: none; position: absolute; left: 10px; right: 10px; top: 100%; margin-top: -6px; background: #fff; border: 1px solid var(--line);
+            box-shadow: 0 4px 12px rgba(0,0,0,.12); max-height: 280px; overflow: auto; z-index: 30; padding: 4px 0; }
+  .slicer.open .sl-pop { display: block; }
+  .sl-pop label { display: flex; gap: 7px; align-items: center; padding: 4px 10px; font-size: 13px; cursor: pointer; }
+  .sl-pop label:hover { background: #EEF3FA; }
+  .sl-pop label.all { border-bottom: 1px solid #E7E6E6; font-weight: 600; }
+  .range { display: grid; gap: 5px; }
+  .range input { width: 100%; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--line); }
+  .reset { background: #fff; border: 1px solid var(--navy); color: var(--navy); padding: 7px; font: inherit; font-size: 13px; cursor: pointer; }
+  .reset:hover { background: var(--navy); color: #fff; }
+  .title { background: var(--navy); color: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
   .title h2 { margin: 0; font-size: 18px; }
   .title span { font-size: 12.5px; color: #D9E1F2; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .chip { margin-top: 10px; background: #FFF4E5; border: 1px solid #F4B183; padding: 6px 10px; font-size: 13px; display: flex; gap: 10px; align-items: center; }
+  .chip button { margin-left: auto; border: 1px solid var(--orange); background: #fff; color: #9E480E; font: inherit; font-size: 12.5px; padding: 2px 10px; cursor: pointer; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 10px 0 12px; }
   .kpi { background: var(--tile); border: 1px solid var(--tile-line); padding: 10px 12px; text-align: center; }
-  .kpi .v { font-size: 26px; font-weight: 700; color: var(--navy); }
-  .kpi .v.good { color: #2E7D32; } .kpi .v.bad { color: var(--red); }
+  .kpi .v { font-size: 25px; font-weight: 700; color: var(--navy); }
+  .kpi .v.good { color: var(--green); } .kpi .v.bad { color: var(--red); }
   .kpi .l { font-size: 12.5px; color: var(--muted); }
   .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .card { background: #fff; border: 1px solid var(--line); padding: 10px 12px 12px; min-width: 0; }
   .card.wide { grid-column: 1 / -1; }
   .card h3 { margin: 0 0 8px; font-size: 14px; color: var(--navy); text-align: center; }
-  .chart { position: relative; height: 290px; }
-  .scroll { overflow: auto; max-height: 330px; }
+  .chart { position: relative; height: 280px; }
+  .scroll { overflow: auto; max-height: 320px; }
   table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
   th { background: var(--navy); color: #fff; font-weight: 600; padding: 5px 7px; text-align: right; position: sticky; top: 0; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
   td { padding: 4px 7px; border-bottom: 1px solid #E7E6E6; text-align: right; white-space: nowrap; }
+  tr.click { cursor: pointer; } tr.click:hover td { outline: 1px solid #9DC3E6; }
   tr:nth-child(even) td { background: #F7F9FC; }
-  td.bad { color: var(--red); font-weight: 600; } td.good { color: #2E7D32; font-weight: 600; }
-  .note { font-size: 12px; color: var(--muted); margin-top: 18px; }
-  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } .chart { height: 250px; } header, main { padding-left: 16px; padding-right: 16px; } }
+  tr.dim td { opacity: .35; } tr.sel td { font-weight: 700; }
+  td.bad { color: var(--red); font-weight: 600; } td.good { color: var(--green); font-weight: 600; }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 16px; }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: 1fr; } aside { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .grid { grid-template-columns: 1fr; } .chart { height: 250px; } header { padding: 12px 16px; }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>Olist E-commerce – Bộ dashboard Kho dữ liệu &amp; BI</h1>
-  <p>8 dashboard theo mã hóa Bài 3 · Dữ liệu: Olist Brazilian E-commerce (2016–2018) · Đơn vị tiền: BRL</p>
+  <p>Dữ liệu: Olist Brazilian E-commerce (2016–2018) · Đơn vị tiền: BRL · Chọn bộ lọc bên trái hoặc bấm vào biểu đồ để lọc chéo</p>
 </header>
 <nav id="nav"></nav>
-<main id="main"></main>
+<div id="loading">Đang tải dữ liệu…</div>
+<div class="wrap" id="wrap" hidden><aside id="side"></aside><main id="main"></main></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="data.js"></script>
 <script>
+// ======================================================================= nền tảng: ngày, giải mã cột
 const PALETTE = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5', '#70AD47', '#264478', '#9E480E', '#636363', '#997300'];
-// màu mang nghĩa: xanh = đạt, đỏ = cảnh báo
-const NAMED = { 'Đúng hạn': '#4472C4', 'Trễ hạn': '#C00000', 'Chưa giao / không giao': '#A5A5A5' };
+const NAMED = { 'Đúng hạn': '#4472C4', 'Trễ hạn': '#C00000', 'Chưa giao / không giao': '#A5A5A5' };   // xanh = đạt, đỏ = cảnh báo
 Chart.defaults.font.family = 'Calibri, "Segoe UI", Arial, sans-serif';
 Chart.defaults.color = '#595959';
 Chart.defaults.animation = false;
 Chart.defaults.plugins.legend.labels.boxWidth = 12;
 
+const FULL = '01/2017–08/2018 (đủ dữ liệu)', OUTP = 'Ngoài giai đoạn (dữ liệu thưa)';
+const ND = 1096, Y = [], MN = [], YM = [], YQ = [], PER = [], WD = [], DL = [];
+const WDN = ['1. Thứ Hai', '2. Thứ Ba', '3. Thứ Tư', '4. Thứ Năm', '5. Thứ Sáu', '6. Thứ Bảy', '7. Chủ nhật'];
+for (let d = 0; d < ND; d++) {
+  const t = new Date(Date.UTC(2016, 0, 1 + d)), y = t.getUTCFullYear(), m = t.getUTCMonth() + 1, mm = String(m).padStart(2, '0');
+  Y[d] = y; MN[d] = 'Tháng ' + mm; YM[d] = `${y}-${mm}`; YQ[d] = `${y}-Q${Math.ceil(m / 3)}`;
+  PER[d] = YM[d] >= '2017-01' && YM[d] <= '2018-08' ? FULL : OUTP; WD[d] = WDN[(t.getUTCDay() + 6) % 7];
+  DL[d] = `${String(t.getUTCDate()).padStart(2, '0')}/${mm}`;
+}
+const dayOf = s => Math.round((Date.parse(s + 'T00:00:00Z') - Date.UTC(2016, 0, 1)) / 864e5);
+const isoOf = d => new Date(Date.UTC(2016, 0, 1 + d)).toISOString().slice(0, 10);
+const T = RAW;
+// trường lấy từ ngày: [cột ngày, bảng tra]
+const DATEF = { year: ['day', Y], month: ['day', MN], ym: ['day', YM], yq: ['day', YQ], period: ['day', PER], weekday: ['day', WD], date: ['day', null],
+                D_date: ['dday', null], D_ym: ['dday', YM] };
+const DATE_IGN = ['year', 'month', 'ym', 'yq', 'period', 'date'];
+const FL = { region: 'Vùng', state: 'Bang', state_name: 'Bang', grp: 'Nhóm ngành', cat: 'Ngành hàng', weight: 'Nhóm cân nặng', abc: 'Nhóm ABC người bán',
+  sstate: 'Bang người bán', seller: 'Người bán', pay: 'Phương thức thanh toán', ctype: 'Loại khách', senti: 'Cảm nhận', label: 'Mức điểm', dstatus: 'Trạng thái giao',
+  year: 'Năm', month: 'Tháng', ym: 'Tháng', yq: 'Quý', period: 'Giai đoạn', weekday: 'Thứ', hour: 'Giờ đặt', inst: 'Số kỳ trả góp', cohort: 'Tháng mua đầu',
+  date: 'Thời gian', D_date: 'Ngày giao' };
+
+function has(f, field) { const df = DATEF[field]; return df ? df[0] in T[f].c : field in T[f].c; }
+function get(f, field, i) {
+  const t = T[f], df = DATEF[field];
+  if (df) { const d = t.c[df[0]][i]; return d === null ? null : df[1] ? df[1][d] : d; }
+  const v = t.c[field][i], dict = t.d[field];
+  return dict ? (v < 0 ? null : dict[v]) : v;
+}
+
+// ======================================================================= lọc (slicer + lọc chéo) và tổng hợp
+let st, cache;
+function rows(f, src, ignore = []) {
+  const ck = st.click && st.click.src !== src && !ignore.includes(st.click.field) && has(f, st.click.field) ? st.click : null;
+  const key = f + '|' + ignore.join(',') + '|' + (ck ? 'c' : '');
+  if (cache[key]) return cache[key];
+  const tests = [];
+  for (const [field, set] of Object.entries(st.sel))
+    if (set.size && !ignore.includes(field) && has(f, field)) tests.push(i => set.has(get(f, field, i)));
+  for (const [field, r] of Object.entries(st.range))
+    if (!ignore.includes(field) && has(f, field)) tests.push(i => { const v = get(f, field, i); return v !== null && v >= r[0] && v <= r[1]; });
+  if (ck) tests.push(i => String(get(f, ck.field, i)) === ck.value);
+  const out = [], n = T[f].n;
+  outer: for (let i = 0; i < n; i++) { for (const t of tests) if (!t(i)) continue outer; out.push(i); }
+  return cache[key] = out;
+}
+const col = (f, c) => T[f].c[c];
+const sum = (f, c, ix) => { const a = col(f, c); let s = 0; for (const i of ix) s += a[i] || 0; return s; };
+const avg = (f, c, ix) => { const a = col(f, c); let s = 0, n = 0; for (const i of ix) { const v = a[i]; if (v !== null) { s += v; n++; } } return n ? s / n : null; };
+const dist = (f, c, ix) => { const a = col(f, c), s = new Set(); for (const i of ix) s.add(a[i]); return s.size; };
+const where = (f, c, ix, v = 1) => { const a = col(f, c); return ix.filter(i => a[i] === v); };
+const div = (a, b) => (b ? a / b : null);
+function by(f, field, ix) {
+  const m = new Map();
+  for (const i of ix) { const k = get(f, field, i); if (k === null || k === undefined) continue; let a = m.get(k); if (!a) m.set(k, a = []); a.push(i); }
+  return m;
+}
+const keysOf = m => [...m.keys()].sort((a, b) => typeof a === 'number' ? a - b : String(a).localeCompare(String(b), 'vi'));
+// series 1 measure theo 1 trường; sort: 'key' | 'desc' | 'asc'
+function ser(f, field, ix, fn, sort = 'key', top) {
+  const m = by(f, field, ix);
+  let pairs = keysOf(m).map(k => [k, fn(m.get(k))]).filter(p => p[1] !== null);
+  if (sort !== 'key') pairs.sort((a, b) => sort === 'desc' ? b[1] - a[1] : a[1] - b[1]);
+  if (top) pairs = pairs.slice(0, top);
+  return { labels: pairs.map(p => String(p[0])), values: pairs.map(p => p[1]) };
+}
+// ma trận: hàng × cột -> giá trị
+function grid(f, rf, cf, ix, fn, colKeys) {
+  const rm = by(f, rf, ix), rk = keysOf(rm);
+  const ck = colKeys || keysOf(by(f, cf, ix));
+  const series = ck.map(c => ({ name: String(c), values: [] }));
+  rk.forEach(r => { const cm = by(f, cf, rm.get(r)); ck.forEach((c, j) => series[j].values.push(cm.has(c) ? fn(cm.get(c)) : null)); });
+  return { labels: rk.map(String), series };
+}
+// ghép nhiều series theo cùng nhãn
+function merge(list, names) {
+  const labels = [...new Set(list.flatMap(s => s.labels))].sort();
+  return { labels, series: list.map((s, j) => { const m = new Map(s.labels.map((l, k) => [l, s.values[k]])); return { name: names[j], values: labels.map(l => m.has(l) ? m.get(l) : null) }; }) };
+}
+
+// measure dùng chung (giống DAX trong Power BI)
+const REV = ix => sum('S', 'price', ix), ORD = ix => dist('S', 'order', ix), CUS = ix => dist('S', 'cust', ix), SELL = ix => dist('S', 'sellerk', ix);
+const LATE_O = ix => { const d = where('O', 'deliv', ix); return div(sum('O', 'late', d), d.length); };
+const LATE_S = ix => { const d = where('S', 'deliv', ix); return div(sum('S', 'late', d), d.length); };
+const SCORE = ix => avg('R', 'score', ix);
+const CANCEL = ix => div(sum('O', 'cancel', ix), ix.length);
+const REPEAT = 'Mua lại (≥ 2 đơn)';
+const repeatRate = ix => div(dist('S', 'cust', ix.filter(i => get('S', 'ctype', i) === REPEAT)), CUS(ix));
+const kpi = (label, value, fmt, bad) => ({ label, value, fmt, bad });
+
+// ======================================================================= 8 dashboard
+const PAGES = [
+{ name: 'Tổng quan chiến lược', who: 'Ban giám đốc',
+  slicers: [['period', 'Giai đoạn', [FULL]], ['year', 'Năm'], ['region', 'Vùng']],
+  kpis: () => { const s = rows('S', 'k'), o = rows('O', 'k'), r = rows('R', 'k'), rv = REV(s), n = ORD(s), aov = div(rv, n), lt = LATE_O(o), sc = SCORE(r);
+    return [kpi('Doanh thu', rv, 'n'), kpi('Số đơn', n, 'n'), kpi('Giá trị đơn TB (AOV)', aov, 'd', aov < 125), kpi('Số khách', CUS(s), 'n'),
+            kpi('% Giao trễ', lt, 'p', lt > .1), kpi('Điểm đánh giá TB', sc, 'd', sc < 4)]; },
+  visuals: [
+    { title: 'Doanh thu thực tế (cột) và mức thường đạt – TB 6 tháng trước (đường)', type: 'combo', key: 'ym', wide: true,
+      build: v => { const cur = ser('S', 'ym', rows('S', v), REV), u = usual(v);
+        return { labels: cur.labels, series: [{ name: 'Doanh thu', values: cur.values }, { name: 'Thường đạt', values: cur.labels.map(l => u[l] ?? null) }] }; } },
+    { title: 'Doanh thu theo vùng', type: 'hbar', key: 'region', build: v => ser('S', 'region', rows('S', v), REV, 'desc') },
+    { title: 'Cơ cấu doanh thu theo nhóm ngành', type: 'donut', key: 'grp', build: v => ser('S', 'grp', rows('S', v), REV, 'desc') },
+    { title: '% giao trễ (trục trái) và điểm hài lòng TB (trục phải)', type: 'line2', key: 'ym', fmt: ['p', 'd'],
+      build: v => merge([ser('O', 'ym', rows('O', v), LATE_O), ser('R', 'ym', rows('R', v), SCORE)], ['% Giao trễ', 'Điểm TB']) },
+    { title: 'Bảng nhiệt doanh thu Vùng × Quý', type: 'heat', key: 'region', build: v => grid('S', 'region', 'yq', rows('S', v), REV) },
+    { title: 'Cảnh báo so với thường đạt (lệch quá ±10%)', type: 'table', key: 'ym', fmt: ['n', 'n', 'p'], warn: x => x < -.1 ? 'bad' : x > .1 ? 'good' : '',
+      build: v => { const cur = ser('S', 'ym', rows('S', v), REV), u = usual(v);
+        const lab = cur.labels.filter(l => u[l]).reverse(), val = Object.fromEntries(cur.labels.map((l, k) => [l, cur.values[k]]));
+        return { labels: lab, series: [{ name: 'Doanh thu', values: lab.map(l => val[l]) }, { name: 'Thường đạt', values: lab.map(l => u[l]) },
+                                       { name: '% so với thường đạt', values: lab.map(l => val[l] / u[l] - 1) }] }; } }] },
+
+{ name: 'Tổng kết năm', who: 'Ban giám đốc', note: 'Mặc định: tháng 01–08 năm 2018 so với cùng kỳ 2017',
+  slicers: [['year', 'Năm', [2018]], ['month', 'Tháng', ['Tháng 01', 'Tháng 02', 'Tháng 03', 'Tháng 04', 'Tháng 05', 'Tháng 06', 'Tháng 07', 'Tháng 08']]],
+  kpis: () => { const s = rows('S', 'k'), p = prevYear('S', 'k'), rv = REV(s), pv = REV(p), o = rows('O', 'k'), r = rows('R', 'k'), c = CANCEL(o), sc = SCORE(r), g = div(rv - pv, pv);
+    return [kpi('Doanh thu', rv, 'n'), kpi('Cùng kỳ năm trước', pv, 'n'), kpi('% Tăng trưởng', g, 'p', g < 0), kpi('Số đơn', ORD(s), 'n'),
+            kpi('% Đơn hủy', c, 'p1', c > .015), kpi('Điểm đánh giá TB', sc, 'd', sc < 4)]; },
+  visuals: [
+    { title: 'Doanh thu từng tháng: 2017 so với 2018 (không lọc theo Năm)', type: 'bar', key: 'month',
+      build: v => { const ix = rows('S', v, ['year']); return grid('S', 'month', 'year', ix.filter(i => get('S', 'year', i) >= 2017), REV, [2017, 2018]); } },
+    { title: 'Doanh thu tăng thêm theo nhóm ngành so với cùng kỳ', type: 'hbar', key: 'grp',
+      build: v => { const c = ser('S', 'grp', rows('S', v), REV), p = ser('S', 'grp', prevYear('S', v), REV), pm = new Map(p.labels.map((l, k) => [l, p.values[k]]));
+        const pairs = c.labels.map((l, k) => [l, c.values[k] - (pm.get(l) || 0)]).sort((a, b) => b[1] - a[1]);
+        return { labels: pairs.map(x => x[0]), values: pairs.map(x => x[1]) }; } },
+    { title: 'Top 10 ngành hàng', type: 'table', key: 'cat', fmt: ['n', 'n', 'p'], warn: x => x < 0 ? 'bad' : 'good', build: v => topYoY('cat', v) },
+    { title: 'Top 10 bang', type: 'table', key: 'state_name', fmt: ['n', 'n', 'p'], warn: x => x < 0 ? 'bad' : 'good', build: v => topYoY('state_name', v) }] },
+
+{ name: 'Phân tích doanh số', who: 'Bán hàng',
+  slicers: [['date', 'Thời gian', ['2017-01-01', '2018-08-31'], 'range'], ['region', 'Vùng'], ['grp', 'Nhóm ngành'], ['pay', 'Phương thức thanh toán']],
+  kpis: () => { const s = rows('S', 'k'), rv = REV(s), n = ORD(s), fr = div(sum('S', 'freight', s), rv), m = ser('S', 'ym', s, REV), L = m.values.length;
+    return [kpi('Doanh thu', rv, 'n'), kpi('Số đơn', n, 'n'), kpi('AOV', div(rv, n), 'd', div(rv, n) < 125), kpi('% Phí VC / Doanh thu', fr, 'p', fr > .18),
+            kpi('% Tăng trưởng tháng cuối so với tháng trước', L > 1 ? m.values[L - 1] / m.values[L - 2] - 1 : null, 'p')]; },
+  visuals: [
+    { title: 'Doanh thu theo quý và nhóm ngành', type: 'stack', key: 'yq',
+      build: v => { const g = grid('S', 'yq', 'grp', rows('S', v), REV); g.series.sort((a, b) => tot(b) - tot(a));
+        const top = g.series.slice(0, 6), rest = g.series.slice(6);
+        if (rest.length) top.push({ name: 'Khác', values: g.labels.map((_, k) => rest.reduce((s, x) => s + (x.values[k] || 0), 0)) });
+        return { labels: g.labels, series: top }; } },
+    { title: 'Top 15 bang theo doanh thu', type: 'hbar', key: 'state', build: v => ser('S', 'state', rows('S', v), REV, 'desc', 15) },
+    { title: 'Tăng trưởng doanh thu so với tháng trước', type: 'line', key: 'ym', fmt: 'p',
+      build: v => { const m = ser('S', 'ym', rows('S', v), REV); return { labels: m.labels.slice(1), values: m.values.slice(1).map((x, k) => x / m.values[k] - 1) }; } },
+    { title: 'Bảng nhiệt doanh thu Nhóm ngành × Quý', type: 'heat', key: 'grp', wide: true, build: v => grid('S', 'grp', 'yq', rows('S', v), REV) }] },
+
+{ name: 'Người bán & sản phẩm', who: 'Bán hàng',
+  slicers: [['abc', 'Nhóm ABC người bán'], ['sstate', 'Bang người bán'], ['grp', 'Nhóm ngành'], ['year', 'Năm']],
+  kpis: () => { const s = rows('S', 'k'), rv = REV(s), ns = SELL(s), lt = LATE_S(s);
+    return [kpi('Doanh thu', rv, 'n'), kpi('Số người bán', ns, 'n'), kpi('Doanh thu / người bán', div(rv, ns), 'n'), kpi('Giá bán TB', div(rv, s.length), 'd'),
+            kpi('% Giao trễ', lt, 'p', lt > .1)]; },
+  visuals: [
+    { title: 'Pareto: doanh thu theo ngành hàng (cột) và % lũy kế (đường) – 30 ngành lớn nhất', type: 'pareto', key: 'cat', wide: true,
+      build: v => { const s = ser('S', 'cat', rows('S', v), REV, 'desc'), t = s.values.reduce((a, b) => a + b, 0); let c = 0;
+        const cum = s.values.map(x => (c += x) / t);
+        return { labels: s.labels.slice(0, 30), series: [{ name: 'Doanh thu', values: s.values.slice(0, 30) }, { name: '% lũy kế', values: cum.slice(0, 30) }] }; } },
+    { title: 'Số người bán (cột) và doanh thu (đường) theo nhóm ABC', type: 'combo', key: 'abc', dual: true,
+      build: v => merge([ser('S', 'abc', rows('S', v), SELL), ser('S', 'abc', rows('S', v), REV)], ['Số người bán', 'Doanh thu']) },
+    { title: 'Doanh thu (cột) và phí vận chuyển TB (đường) theo cân nặng', type: 'combo', key: 'weight', dual: true, fmt: ['n', 'd'],
+      build: v => merge([ser('S', 'weight', rows('S', v), REV), ser('S', 'weight', rows('S', v), ix => avg('S', 'freight', ix))], ['Doanh thu', 'Phí VC TB']) },
+    { title: 'Top 15 người bán', type: 'table', key: 'seller', wide: true, fmt: ['n', 'n', 'p', 'd'], warn: x => x > .1 ? 'bad' : '',
+      build: v => { const m = by('S', 'seller', rows('S', v)), top = [...m.entries()].map(([k, ix]) => [k, REV(ix), ix]).sort((a, b) => b[1] - a[1]).slice(0, 15);
+        return { labels: top.map(x => x[0]), series: [{ name: 'Doanh thu', values: top.map(x => x[1]) }, { name: 'Số đơn', values: top.map(x => ORD(x[2])) },
+          { name: '% Giao trễ', values: top.map(x => LATE_S(x[2])) }, { name: 'Điểm TB', values: top.map(x => avg('S', 'score', x[2])) }] }; } }] },
+
+{ name: 'Đơn hàng & khách hàng', who: 'Bán hàng',
+  slicers: [['period', 'Giai đoạn', [FULL]], ['year', 'Năm'], ['region', 'Vùng'], ['ctype', 'Loại khách']],
+  kpis: () => { const s = rows('S', 'k'), o = rows('O', 'k'), n = ORD(s), c = CUS(s), cc = CANCEL(o);
+    return [kpi('Số đơn', n, 'n'), kpi('Số khách', c, 'n'), kpi('% Khách mua lại', repeatRate(s), 'p1'), kpi('Đơn / khách', div(n, c), 'd'),
+            kpi('% Đơn hủy', cc, 'p1', cc > .015)]; },
+  visuals: [
+    { title: 'Số khách (cột) và % khách mua lại (đường) theo tháng', type: 'combo', key: 'ym', dual: true, fmt: ['n', 'p1'], wide: true,
+      build: v => merge([ser('S', 'ym', rows('S', v), CUS), ser('S', 'ym', rows('S', v), repeatRate)], ['Số khách', '% Mua lại']) },
+    { title: 'Khách mua 1 lần / mua lại', type: 'donut', key: 'ctype',
+      build: v => ser('S', 'ctype', rows('S', v).filter(i => get('S', 'ctype', i) !== 'Không xác định'), CUS, 'desc') },
+    { title: 'Cohort 2017: % khách còn mua sau n tháng', type: 'heat', key: 'cohort', fmt: 'p1', skip0: true,
+      build: v => { const ix = rows('O', v).filter(i => { const c = get('O', 'cohort', i); return c >= '2017-01' && c <= '2017-12'; });
+        const g = grid('O', 'cohort', 'msf', ix, x => dist('O', 'cust', x), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        g.series.forEach((s, j) => { if (j) s.values = s.values.map((x, k) => div(x, g.series[0].values[k])); });
+        g.series[0].values = g.series[0].values.map(x => x ? 1 : null); g.series.forEach(s => s.name = 'T+' + s.name); return g; } },
+    { title: 'Số đơn theo Thứ × Giờ đặt hàng', type: 'heat', key: 'weekday', wide: true,
+      build: v => grid('O', 'weekday', 'hour', rows('O', v), ix => ix.length, [...Array(24).keys()]) }] },
+
+{ name: 'Chất lượng & đánh giá', who: 'Chăm sóc khách hàng',
+  slicers: [['period', 'Giai đoạn', [FULL]], ['year', 'Năm'], ['region', 'Vùng'], ['senti', 'Cảm nhận']],
+  kpis: () => { const r = rows('R', 'k'), sc = SCORE(r), rated = r.filter(i => col('R', 'score')[i] !== null), neg = div(rated.filter(i => col('R', 'score')[i] <= 2).length, rated.length);
+    return [kpi('Điểm đánh giá TB', sc, 'd', sc < 4), kpi('% Đánh giá 5 sao', div(rated.filter(i => col('R', 'score')[i] === 5).length, rated.length), 'p'),
+            kpi('% Đánh giá tiêu cực', neg, 'p', neg > .15), kpi('% Có bình luận', avg('R', 'comment', r), 'p'), kpi('Giờ phản hồi TB', avg('R', 'ans', r), 'd')]; },
+  visuals: [
+    { title: 'Số đánh giá theo mức điểm', type: 'bar', key: 'label', build: v => ser('R', 'label', rows('R', v).filter(i => col('R', 'score')[i] !== null), ix => ix.length) },
+    { title: 'Điểm TB theo trạng thái giao – giao trễ kéo điểm xuống mạnh', type: 'hbar', key: 'dstatus', fmt: 'd',
+      build: v => ser('R', 'dstatus', rows('R', v), SCORE, 'desc') },
+    { title: 'Điểm TB (trục trái) và % đánh giá tiêu cực (trục phải)', type: 'line2', key: 'ym', fmt: ['d', 'p'],
+      build: v => { const ix = rows('R', v).filter(i => col('R', 'score')[i] !== null), sc = col('R', 'score');
+        return merge([ser('R', 'ym', ix, SCORE), ser('R', 'ym', ix, x => div(x.filter(i => sc[i] <= 2).length, x.length))], ['Điểm TB', '% Tiêu cực']); } },
+    { title: 'Điểm TB theo nhóm ngành (không lọc theo Cảm nhận)', type: 'hbar', key: 'grp', fmt: 'd',
+      build: v => ser('S', 'grp', rows('S', v), ix => avg('S', 'score', ix), 'asc') }] },
+
+{ name: 'Thanh toán & trả góp', who: 'Kế toán / Tài chính',
+  slicers: [['period', 'Giai đoạn', [FULL]], ['year', 'Năm'], ['pay', 'Phương thức thanh toán'], ['region', 'Vùng']],
+  kpis: () => { const p = rows('P', 'k'), tot = sum('P', 'value', p), card = where('P', 'card', p);
+    return [kpi('Tiền thanh toán', tot, 'n'), kpi('Số lần thanh toán', p.length, 'n'), kpi('% Giá trị thẻ tín dụng', div(sum('P', 'value', card), tot), 'p'),
+            kpi('Kỳ trả góp TB (thẻ)', avg('P', 'inst', card), 'd'), kpi('% Trả góp', avg('P', 'isinst', p), 'p')]; },
+  visuals: [
+    { title: 'Cơ cấu giá trị theo phương thức', type: 'donut', key: 'pay', build: v => ser('P', 'pay', rows('P', v), ix => sum('P', 'value', ix), 'desc') },
+    { title: 'Kỳ trả góp TB (thẻ) theo vùng', type: 'hbar', key: 'region', fmt: 'd',
+      build: v => ser('P', 'region', where('P', 'card', rows('P', v)), ix => avg('P', 'inst', ix), 'desc') },
+    { title: 'Tiền thanh toán theo tháng và phương thức', type: 'stack', key: 'ym', wide: true,
+      build: v => grid('P', 'ym', 'pay', rows('P', v), ix => sum('P', 'value', ix)) },
+    { title: 'Số lần thanh toán theo số kỳ trả góp', type: 'bar', key: 'inst', wide: true,
+      build: v => ser('P', 'inst', rows('P', v).filter(i => { const k = col('P', 'inst')[i]; return k >= 1 && k <= 24; }), ix => ix.length) }] },
+
+{ name: 'Vận hành giao hàng', who: 'Vận chuyển', note: 'Lọc theo NGÀY GIAO hàng',
+  slicers: [['D_date', 'Ngày giao', ['2018-06-01', '2018-08-31'], 'range'], ['region', 'Vùng'], ['state', 'Bang']],
+  kpis: () => { const o = where('O', 'deliv', rows('O', 'k')), lt = LATE_O(o), dd = avg('O', 'ddays', o);
+    return [kpi('Đơn đã giao', o.length, 'n'), kpi('% Giao trễ', lt, 'p', lt > .1), kpi('Số ngày giao TB', dd, 'd', dd > 14), kpi('Số ngày hẹn TB', avg('O', 'edays', o), 'd'),
+            kpi('Giờ duyệt TB', avg('O', 'appr', o), 'd'), kpi('Ngày xử lý TB (người bán)', avg('O', 'hand', o), 'd')]; },
+  visuals: [
+    { title: 'Đơn giao xong mỗi ngày (cột) và % giao trễ (đường, ngưỡng 10%)', type: 'combo', key: 'D_date', dual: true, fmt: ['n', 'p'], wide: true,
+      build: v => { const o = where('O', 'deliv', rows('O', v)), m = by('O', 'D_date', o), ks = keysOf(m);
+        return { labels: ks.map(String), display: ks.map(d => DL[d]), series: [{ name: 'Đơn đã giao', values: ks.map(k => m.get(k).length) },
+                 { name: '% Giao trễ', values: ks.map(k => LATE_O(m.get(k))) }] }; } },
+    { title: 'Số ngày trễ TB theo bang (âm = giao sớm hơn hẹn)', type: 'hbar', key: 'state', fmt: 'd',
+      build: v => ser('O', 'state', where('O', 'deliv', rows('O', v)), ix => avg('O', 'delay', ix), 'desc') },
+    { title: 'Trạng thái giao theo vùng (tỷ lệ)', type: 'stack', key: 'region', fmt: 'p', pct: true,
+      build: v => { const g = grid('O', 'region', 'dstatus', rows('O', v).filter(i => col('O', 'dday')[i] !== null), ix => ix.length);
+        g.labels.forEach((_, k) => { const t = g.series.reduce((s, x) => s + (x.values[k] || 0), 0); g.series.forEach(x => x.values[k] = div(x.values[k] || 0, t)); }); return g; } },
+    { title: 'Cảnh báo giao trễ theo bang', type: 'table', key: 'state', wide: true, fmt: ['n', 'p', 'd', 't'], warn: x => x > .1 ? 'bad' : '', warnCol: 1,
+      build: v => { const m = by('O', 'state', where('O', 'deliv', rows('O', v))), list = [...m.entries()].map(([k, ix]) => [k, ix.length, LATE_O(ix), avg('O', 'ddays', ix)])
+          .sort((a, b) => b[2] - a[2]);
+        return { labels: list.map(x => x[0]), series: [{ name: 'Đơn đã giao', values: list.map(x => x[1]) }, { name: '% Giao trễ', values: list.map(x => x[2]) },
+          { name: 'Ngày giao TB', values: list.map(x => x[3]) }, { name: 'Cảnh báo', values: list.map(x => x[2] > .1 ? 'Vượt ngưỡng 10%' : x[2] > .07 ? 'Cần theo dõi' : 'Đạt') }] }; } }] }];
+
+// "thường đạt" = TB doanh thu 6 tháng trước, tính trên mọi tháng (bỏ lọc thời gian, giữ lọc khác) – giống ALL(dim_date) trong DAX
+function usual(v) {
+  const m = ser('S', 'ym', rows('S', v, DATE_IGN), REV), val = new Map(m.labels.map((l, k) => [l, m.values[k]]));
+  const all = [...new Set(YM)], out = {};
+  all.forEach((l, k) => { if (k >= 6) out[l] = all.slice(k - 6, k).reduce((s, x) => s + (val.get(x) || 0), 0) / 6; });
+  return out;
+}
+// cùng kỳ năm trước: giữ tháng đã chọn, lùi năm 1
+function prevYear(f, v) {
+  const ys = st.sel.year && st.sel.year.size ? st.sel.year : new Set([2016, 2017, 2018]);
+  return rows(f, v, ['year']).filter(i => ys.has(get(f, 'year', i) + 1));
+}
+function topYoY(field, v) {
+  const c = by('S', field, rows('S', v)), p = by('S', field, prevYear('S', v));
+  const list = [...c.entries()].map(([k, ix]) => [k, REV(ix), p.has(k) ? REV(p.get(k)) : null]).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  return { labels: list.map(x => x[0]), series: [{ name: 'Doanh thu', values: list.map(x => x[1]) }, { name: 'Cùng kỳ năm trước', values: list.map(x => x[2]) },
+    { name: '% Tăng trưởng', values: list.map(x => x[2] ? x[1] / x[2] - 1 : null) }] };
+}
+const tot = s => s.values.reduce((a, b) => a + (b || 0), 0);
+
+// ======================================================================= hiển thị
 // Định dạng theo nhận xét: số có nghĩa – 12.39% → 12%, 12 345 → 12.3K, 1000 → 1,000
 function fmt(v, f) {
-  if (v === null || v === undefined || v === '') return '–';
+  if (v === null || v === undefined || v === '' || Number.isNaN(v)) return '–';
   if (f === 't' || typeof v === 'string') return v;
   if (f === 'p') return Math.round(v * 100).toLocaleString('en-US') + '%';
+  if (f === 'p1') return (v * 100).toFixed(1) + '%';
   if (f === 'd') return v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const a = Math.abs(v);
   if (a >= 1e6) return (v / 1e6).toFixed(1) + 'M';
   if (a >= 1e4) return (v / 1e3).toFixed(1) + 'K';
   return Math.round(v).toLocaleString('en-US');
 }
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const axisFmt = f => ({ callback: v => fmt(v, f) });
-const tip = fs => ({ callbacks: { label: c => `${c.dataset.label || c.label}: ${fmt(c.raw, Array.isArray(fs) ? fs[c.datasetIndex] : fs)}` } });
+const fadeHex = (c, on) => on ? c : c + '55';
 
-let charts = [];
-function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
+let page = 0, charts = [], states = [];
+function defaults(p) {
+  const s = { sel: {}, range: {}, click: null };
+  p.slicers.forEach(([field, , def, kind]) => {
+    if (kind === 'range') s.range[field] = def.map(dayOf); else s.sel[field] = new Set(def || []);
+  });
+  return s;
+}
+function options(field) {
+  if (field === 'year') return [2016, 2017, 2018];
+  if (field === 'month') return [...new Set(MN)];
+  if (field === 'period') return [FULL, OUTP];
+  const all = new Set();
+  for (const f of ['S', 'O', 'R', 'P']) (T[f].d[field] || []).forEach(x => all.add(x));
+  return [...all].sort((a, b) => String(a).localeCompare(String(b), 'vi'));
+}
 
-function render(i) {
+function renderSide() {
+  const side = document.getElementById('side'), p = PAGES[page];
+  side.innerHTML = '';
+  p.slicers.forEach(([field, label, , kind]) => {
+    const box = el('div', 'slicer');
+    box.append(el('div', 'h', label));
+    if (kind === 'range') {
+      const r = st.range[field], a = el('input'), b = el('input');
+      [a, b].forEach((x, j) => { x.type = 'date'; x.min = '2016-01-01'; x.max = '2018-12-31'; x.value = isoOf(r[j]);
+        x.onchange = () => { if (x.value) { r[j] = dayOf(x.value); refresh(); } }; });
+      const g = el('div', 'range'); g.append(a, b); box.append(g);
+    } else {
+      const set = st.sel[field], opts = options(field), btn = el('button', 'sl-btn'), pop = el('div', 'sl-pop');
+      const label_ = () => btn.textContent = !set.size ? 'Tất cả' : set.size === 1 ? String([...set][0]) : `${set.size} lựa chọn`;
+      label_();
+      const all = el('label', 'all', `<input type="checkbox"> Tất cả`);
+      const cAll = all.querySelector('input'); cAll.checked = !set.size;
+      cAll.onchange = () => { set.clear(); pop.querySelectorAll('input.o').forEach(x => x.checked = false); cAll.checked = true; label_(); refresh(); };
+      pop.append(all);
+      opts.forEach(o => {
+        const lb = el('label', '', `<input type="checkbox" class="o"> ${esc(o)}`), c = lb.querySelector('input');
+        c.checked = set.has(o);
+        c.onchange = () => { c.checked ? set.add(o) : set.delete(o); cAll.checked = !set.size; label_(); refresh(); };
+        pop.append(lb);
+      });
+      btn.onclick = e => { e.stopPropagation(); const open = box.classList.contains('open'); document.querySelectorAll('.slicer.open').forEach(x => x.classList.remove('open')); if (!open) box.classList.add('open'); };
+      pop.onclick = e => e.stopPropagation();
+      box.append(btn, pop);
+    }
+    side.append(box);
+  });
+  const reset = el('button', 'reset', 'Đặt lại bộ lọc mặc định');
+  reset.onclick = () => { st = states[page] = defaults(p); renderSide(); refresh(); };
+  side.append(reset);
+}
+
+function refresh() {
+  cache = {};
   charts.forEach(c => c.destroy()); charts = [];
-  const d = DASH[i], main = document.getElementById('main');
-  document.querySelectorAll('nav button').forEach((b, j) => b.classList.toggle('on', j === i));
+  const p = PAGES[page], main = document.getElementById('main');
   main.innerHTML = '';
   const t = el('div', 'title');
-  t.append(el('h2', '', `${d.code} · ${d.name}`), el('span', '', `Người dùng: ${d.role} · Bộ lọc: ${d.filt}`));
+  t.append(el('h2', '', esc(p.name)), el('span', '', `Dành cho: ${esc(p.who)}${p.note ? ' · ' + esc(p.note) : ''}`));
   main.append(t);
+  if (st.click) {
+    const chip = el('div', 'chip', `Đang lọc chéo theo <b>${esc(FL[st.click.field] || st.click.field)}</b> = ${esc(st.click.disp || st.click.value)}`);
+    const b = el('button', '', 'Bỏ lọc chéo'); b.onclick = () => { st.click = null; refresh(); }; chip.append(b); main.append(chip);
+  }
   const k = el('div', 'kpis');
-  d.kpis.forEach(x => {
-    const cls = x.bad === true ? 'bad' : x.bad === false ? 'good' : '';
-    k.append(el('div', 'kpi', `<div class="v ${cls}">${fmt(x.value, x.fmt)}</div><div class="l">${x.label}</div>`));
-  });
+  p.kpis().forEach(x => k.append(el('div', 'kpi', `<div class="v ${x.bad === true ? 'bad' : x.bad === false ? 'good' : ''}">${fmt(x.value, x.fmt)}</div><div class="l">${esc(x.label)}</div>`)));
   main.append(k);
   const g = el('div', 'grid');
-  d.charts.forEach((c, j) => {
-    const card = el('div', 'card' + (c.wide ? ' wide' : ''));
-    card.append(el('h3', '', `${'①②③④⑤⑥'[j]} ${c.title}`));
-    if (c.type === 'table' || c.type === 'heat') card.append(tableOf(c));
-    else { const box = el('div', 'chart'), cv = el('canvas'); box.append(cv); card.append(box); charts.push(new Chart(cv, chartOf(c))); }
+  p.visuals.forEach((vis, j) => {
+    const card = el('div', 'card' + (vis.wide ? ' wide' : ''));
+    card.append(el('h3', '', esc(vis.title)));
+    const d = vis.build(j);
+    if (!d.labels.length) card.append(el('div', 'empty', 'Không có dữ liệu với bộ lọc đang chọn'));
+    else if (vis.type === 'table' || vis.type === 'heat') card.append(tableOf(vis, d, j));
+    else { const box = el('div', 'chart'), cv = el('canvas'); box.append(cv); card.append(box); charts.push(new Chart(cv, chartOf(vis, d, j))); }
     g.append(card);
   });
   main.append(g);
-  main.append(el('p', 'note', 'Màu chữ đỏ / xanh trên thẻ KPI: so với ngưỡng cảnh báo trong bảng KPI (VD: % giao trễ &gt; 10%, điểm đánh giá &lt; 4, AOV &lt; 125 BRL). Rê chuột lên biểu đồ để xem số chi tiết.'));
-  try { localStorage.setItem('tab', i); } catch (e) {}
+  main.append(el('p', 'note', 'Bấm vào cột, lát cắt hoặc dòng bảng để lọc chéo các biểu đồ khác (bấm lại để bỏ). Số đỏ / xanh trên thẻ KPI: so với ngưỡng cảnh báo (VD: % giao trễ &gt; 10%, điểm &lt; 4, AOV &lt; 125 BRL).'));
 }
 
-function tableOf(c) {
-  const wrap = el('div', 'scroll'), tb = el('table');
-  const fs = c.fmt || 'n';
-  let h = '<tr><th></th>' + c.series.map(s => `<th>${s.name}</th>`).join('') + '</tr>';
-  // bảng nhiệt: tô nền theo giá trị (trắng → xanh)
-  const nums = c.type === 'heat' ? c.series.slice(c.skip0 ? 1 : 0).flatMap(s => s.values).filter(v => v !== null) : [];
+function clickOn(j, vis, key, disp) {
+  // vẽ lại sau khi Chart.js xử lý xong cú bấm (hủy biểu đồ ngay trong sự kiện của nó sẽ lỗi)
+  if (key === undefined) { if (st.click && st.click.src === j) { st.click = null; setTimeout(refresh); } return; }
+  st.click = st.click && st.click.src === j && st.click.value === key ? null : { field: vis.key, value: key, disp, src: j };
+  setTimeout(refresh);
+}
+const selOf = (j, label) => !st.click || st.click.src !== j || st.click.value === label;
+
+function tableOf(vis, d, j) {
+  const wrap = el('div', 'scroll'), tb = el('table'), fs = vis.fmt || 'n';
+  const head = el('tr'); head.append(el('th', '', '')); d.series.forEach(s => head.append(el('th', '', esc(s.name)))); tb.append(head);
+  const nums = vis.type === 'heat' ? d.series.slice(vis.skip0 ? 1 : 0).flatMap(s => s.values).filter(v => typeof v === 'number') : [];
   const max = nums.length ? Math.max(...nums) : 1;
-  c.labels.forEach((lab, r) => {
-    h += `<tr><td>${lab}</td>` + c.series.map((s, j) => {
-      const v = s.values[r], f = Array.isArray(fs) ? fs[j] : fs;
-      let style = '', cls = '';
-      if (c.type === 'heat' && v !== null && !(c.skip0 && j === 0)) {
-        const a = Math.min(v / max, 1);
-        style = `background: rgba(68,114,196,${(a * 0.85).toFixed(2)}); color: ${a > .55 ? '#fff' : 'inherit'}`;
+  d.labels.forEach((lab, r) => {
+    const tr = el('tr', 'click' + (st.click && st.click.src === j ? (st.click.value === lab ? ' sel' : ' dim') : ''));
+    tr.append(el('td', '', esc(lab)));
+    d.series.forEach((s, c) => {
+      const v = s.values[r], f = Array.isArray(fs) ? fs[c] : fs, td = el('td', '', fmt(v, f));
+      if (vis.type === 'heat' && typeof v === 'number' && !(vis.skip0 && c === 0)) {
+        const a = Math.min(v / max, 1); td.style.background = `rgba(68,114,196,${(a * .85).toFixed(2)})`; if (a > .55) td.style.color = '#fff';
       }
-      if (c.warn_col === j && typeof v === 'number') cls = (c.title.includes('giao trễ') ? v > .1 : v < -.1) ? 'bad' : (c.title.includes('giao trễ') ? '' : v > .1 ? 'good' : '');
-      if (f === 't' && typeof v === 'string') cls = v.startsWith('Vượt') ? 'bad' : v === 'Đạt' ? 'good' : '';
-      return `<td class="${cls}" style="${style}">${fmt(v, f)}</td>`;
-    }).join('') + '</tr>';
+      if (vis.warn && typeof v === 'number' && f.startsWith && f.startsWith('p') && (vis.warnCol === undefined || c === vis.warnCol)) td.className = vis.warn(v);
+      if (f === 't') td.className = v.startsWith('Vượt') ? 'bad' : v === 'Đạt' ? 'good' : '';
+      tr.append(td);
+    });
+    tr.onclick = () => clickOn(j, vis, lab, lab);
+    tb.append(tr);
   });
-  tb.innerHTML = h; wrap.append(tb); return wrap;
+  wrap.append(tb); return wrap;
 }
 
-function chartOf(c) {
-  const f = c.fmt || 'n';
-  const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                 plugins: { legend: { position: 'top' }, tooltip: tip(f) } };
+function chartOf(vis, d, j) {
+  const f = vis.fmt || 'n', fs = Array.isArray(f) ? f : [f, vis.type === 'pareto' ? 'p' : f];
+  const labels = d.display || d.labels;
+  const tip = { callbacks: { label: c => `${c.dataset.label || c.label}: ${fmt(c.raw, Array.isArray(f) ? fs[c.datasetIndex] : f)}` } };
+  const onClick = (e, els) => { const k = els.length ? els[0].index : -1; clickOn(j, vis, k < 0 ? undefined : d.labels[k], k < 0 ? '' : labels[k]); };
+  const base = { responsive: true, maintainAspectRatio: false, onClick, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top' }, tooltip: tip } };
   const grid = { color: '#EDEDED' };
-  if (c.type === 'donut') return { type: 'doughnut', data: { labels: c.labels, datasets: [{ data: c.values, backgroundColor: PALETTE, borderColor: '#fff' }] },
-    options: { ...base, cutout: '58%', interaction: {}, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: x => {
+  const shade = c => d.labels.map(l => fadeHex(c, selOf(j, l)));
+  if (vis.type === 'donut') return { type: 'doughnut',
+    data: { labels, datasets: [{ data: d.values, backgroundColor: d.labels.map((l, k) => fadeHex(PALETTE[k % 10], selOf(j, l))), borderColor: '#fff' }] },
+    options: { ...base, interaction: {}, cutout: '58%', plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: x => {
       const s = x.dataset.data.reduce((a, b) => a + b, 0); return `${x.label}: ${fmt(x.raw, f)} (${fmt(x.raw / s, 'p')})`; } } } } } };
-  if (c.type === 'bar' || c.type === 'hbar' || c.type === 'line') {
-    const horiz = c.type === 'hbar', line = c.type === 'line';
-    const ds = c.series ? c.series.map((s, j) => ({ label: s.name, data: s.values, backgroundColor: PALETTE[j] }))
-                        : [{ label: c.title.split(' ')[0], data: c.values, backgroundColor: c.values.map(v => v < 0 ? PALETTE[5] : PALETTE[0]),
-                             borderColor: PALETTE[0], borderWidth: line ? 2 : 0, pointRadius: line ? 2 : 0 }];
-    return { type: line ? 'line' : 'bar', data: { labels: c.labels, datasets: ds },
-      options: { ...base, indexAxis: horiz ? 'y' : 'x', plugins: { ...base.plugins, legend: { display: !!c.series } },
+  if (vis.type === 'bar' || vis.type === 'hbar' || vis.type === 'line') {
+    const horiz = vis.type === 'hbar', line = vis.type === 'line';
+    const ds = d.series ? d.series.map((s, k) => ({ label: s.name, data: s.values, backgroundColor: PALETTE[k] }))
+      : [{ label: '', data: d.values, backgroundColor: line ? PALETTE[0] : d.labels.map((l, k) => fadeHex(d.values[k] < 0 ? '#70AD47' : PALETTE[0], selOf(j, l))),
+           borderColor: PALETTE[0], borderWidth: line ? 2 : 0, pointRadius: line ? 2 : 0 }];
+    return { type: line ? 'line' : 'bar', data: { labels, datasets: ds },
+      options: { ...base, indexAxis: horiz ? 'y' : 'x', plugins: { ...base.plugins, legend: { display: !!d.series } },
         scales: { [horiz ? 'x' : 'y']: { grid, ticks: axisFmt(f) }, [horiz ? 'y' : 'x']: { grid: { display: false } } } } };
   }
-  if (c.type === 'stack') return { type: 'bar', data: { labels: c.labels,
-      datasets: c.series.map((s, j) => ({ label: s.name, data: s.values, backgroundColor: NAMED[s.name] || PALETTE[j] })) },
-    options: { ...base, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid, ticks: axisFmt(f), max: f === 'p' ? 1 : undefined } } } };
-  // combo / pareto / line2: series 0 = cột (hoặc đường trái), series 1 = đường
-  const fs = Array.isArray(f) ? f : [f, c.type === 'pareto' ? 'p' : f];
-  const right = c.dual || c.type === 'pareto' || c.type === 'line2';
-  const s0 = c.series[0], s1 = c.series[1];
-  return { type: 'bar', data: { labels: c.labels, datasets: [
-      { type: c.type === 'line2' ? 'line' : 'bar', label: s0.name, data: s0.values, backgroundColor: PALETTE[0], borderColor: PALETTE[0],
-        borderWidth: c.type === 'line2' ? 2 : 0, pointRadius: 2, order: 2, yAxisID: 'y' },
-      { type: 'line', label: s1.name, data: s1.values, borderColor: PALETTE[1], backgroundColor: PALETTE[1], borderWidth: 2,
-        pointRadius: 2, order: 1, yAxisID: right ? 'y1' : 'y' } ] },
-    options: { ...base, plugins: { ...base.plugins, tooltip: tip(fs) }, scales: {
-      x: { grid: { display: false } },
-      y: { grid, ticks: axisFmt(fs[0]), beginAtZero: c.type !== 'line2' },
-      ...(right ? { y1: { position: 'right', grid: { display: false }, ticks: axisFmt(fs[1]), max: c.type === 'pareto' ? 1 : undefined } } : {}) } } };
+  if (vis.type === 'stack') return { type: 'bar',
+    data: { labels, datasets: d.series.map((s, k) => ({ label: s.name, data: s.values, backgroundColor: NAMED[s.name] || PALETTE[k % 10] })) },
+    options: { ...base, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid, ticks: axisFmt(f), max: vis.pct ? 1 : undefined } } } };
+  // combo / pareto / line2: series 0 = cột (line2: đường), series 1 = đường
+  const right = vis.dual || vis.type === 'pareto' || vis.type === 'line2', s0 = d.series[0], s1 = d.series[1];
+  return { type: 'bar', data: { labels, datasets: [
+      { type: vis.type === 'line2' ? 'line' : 'bar', label: s0.name, data: s0.values, backgroundColor: vis.type === 'line2' ? PALETTE[0] : shade(PALETTE[0]),
+        borderColor: PALETTE[0], borderWidth: vis.type === 'line2' ? 2 : 0, pointRadius: 2, order: 2, yAxisID: 'y' },
+      { type: 'line', label: s1.name, data: s1.values, borderColor: vis.type === 'line2' && fs[0] === 'p' ? '#C00000' : PALETTE[1],
+        backgroundColor: PALETTE[1], borderWidth: 2, pointRadius: 2, order: 1, yAxisID: right ? 'y1' : 'y', spanGaps: true } ] },
+    options: { ...base, plugins: { ...base.plugins, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.raw, fs[c.datasetIndex])}` } } }, scales: {
+      x: { grid: { display: false } }, y: { grid, ticks: axisFmt(fs[0]), beginAtZero: vis.type !== 'line2' },
+      ...(right ? { y1: { position: 'right', grid: { display: false }, ticks: axisFmt(fs[1]), max: vis.type === 'pareto' ? 1 : undefined } } : {}) } } };
 }
 
+function go(i) {
+  page = i; st = states[i] || (states[i] = defaults(PAGES[i]));
+  document.querySelectorAll('nav button').forEach((b, k) => b.classList.toggle('on', k === i));
+  renderSide(); refresh();
+  try { localStorage.setItem('page', i); } catch (e) {}
+}
+document.addEventListener('click', () => document.querySelectorAll('.slicer.open').forEach(x => x.classList.remove('open')));
 const nav = document.getElementById('nav');
-DASH.forEach((d, i) => { const b = el('button', '', d.code); b.title = d.name; b.onclick = () => render(i); nav.append(b); });
-let start = 0; try { start = +localStorage.getItem('tab') || 0; } catch (e) {}
-render(start < DASH.length ? start : 0);
+PAGES.forEach((p, i) => { const b = el('button', '', esc(p.name)); b.onclick = () => go(i); nav.append(b); });
+document.getElementById('loading').remove();
+document.getElementById('wrap').hidden = false;
+let start = 0; try { start = +localStorage.getItem('page') || 0; } catch (e) {}
+go(start < PAGES.length ? start : 0);
 </script>
 </body>
 </html>
