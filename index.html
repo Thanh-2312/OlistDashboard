@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olist BI Dashboard</title>
+<style>
+  :root {
+    --navy: #1F3864; --blue: #4472C4; --orange: #ED7D31; --grey: #A5A5A5; --gold: #FFC000;
+    --sky: #5B9BD5; --green: #70AD47; --red: #C00000;
+    --tile: #DDEBF7; --tile-line: #9DC3E6; --line: #BFBFBF; --bg: #F2F2F2; --text: #262626; --muted: #595959;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 Calibri, "Segoe UI", Arial, sans-serif; }
+  header { background: var(--navy); color: #fff; padding: 14px 24px; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
+  header p { margin: 2px 0 0; font-size: 13px; color: #D9E1F2; }
+  nav { background: #fff; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; padding: 0 16px; position: sticky; top: 0; z-index: 5; }
+  nav button { border: 0; background: none; padding: 11px 14px; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+  nav button:hover { color: var(--navy); }
+  nav button.on { color: var(--navy); font-weight: 700; border-bottom-color: var(--blue); }
+  main { max-width: 1320px; margin: 0 auto; padding: 18px 16px 40px; }
+  .title { background: var(--navy); color: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; align-items: baseline; }
+  .title h2 { margin: 0; font-size: 18px; }
+  .title span { font-size: 12.5px; color: #D9E1F2; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .kpi { background: var(--tile); border: 1px solid var(--tile-line); padding: 10px 12px; text-align: center; }
+  .kpi .v { font-size: 26px; font-weight: 700; color: var(--navy); }
+  .kpi .v.good { color: #2E7D32; } .kpi .v.bad { color: var(--red); }
+  .kpi .l { font-size: 12.5px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .card { background: #fff; border: 1px solid var(--line); padding: 10px 12px 12px; min-width: 0; }
+  .card.wide { grid-column: 1 / -1; }
+  .card h3 { margin: 0 0 8px; font-size: 14px; color: var(--navy); text-align: center; }
+  .chart { position: relative; height: 290px; }
+  .scroll { overflow: auto; max-height: 330px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { background: var(--navy); color: #fff; font-weight: 600; padding: 5px 7px; text-align: right; position: sticky; top: 0; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  td { padding: 4px 7px; border-bottom: 1px solid #E7E6E6; text-align: right; white-space: nowrap; }
+  tr:nth-child(even) td { background: #F7F9FC; }
+  td.bad { color: var(--red); font-weight: 600; } td.good { color: #2E7D32; font-weight: 600; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 18px; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } .chart { height: 250px; } header, main { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Olist E-commerce – Bộ dashboard Kho dữ liệu &amp; BI</h1>
+  <p>8 dashboard theo mã hóa Bài 3 · Dữ liệu: Olist Brazilian E-commerce (2016–2018) · Đơn vị tiền: BRL</p>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<script>
+const PALETTE = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5', '#70AD47', '#264478', '#9E480E', '#636363', '#997300'];
+// màu mang nghĩa: xanh = đạt, đỏ = cảnh báo
+const NAMED = { 'Đúng hạn': '#4472C4', 'Trễ hạn': '#C00000', 'Chưa giao / không giao': '#A5A5A5' };
+Chart.defaults.font.family = 'Calibri, "Segoe UI", Arial, sans-serif';
+Chart.defaults.color = '#595959';
+Chart.defaults.animation = false;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+// Định dạng theo nhận xét: số có nghĩa – 12.39% → 12%, 12 345 → 12.3K, 1000 → 1,000
+function fmt(v, f) {
+  if (v === null || v === undefined || v === '') return '–';
+  if (f === 't' || typeof v === 'string') return v;
+  if (f === 'p') return Math.round(v * 100).toLocaleString('en-US') + '%';
+  if (f === 'd') return v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (a >= 1e4) return (v / 1e3).toFixed(1) + 'K';
+  return Math.round(v).toLocaleString('en-US');
+}
+const axisFmt = f => ({ callback: v => fmt(v, f) });
+const tip = fs => ({ callbacks: { label: c => `${c.dataset.label || c.label}: ${fmt(c.raw, Array.isArray(fs) ? fs[c.datasetIndex] : fs)}` } });
+
+let charts = [];
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
+
+function render(i) {
+  charts.forEach(c => c.destroy()); charts = [];
+  const d = DASH[i], main = document.getElementById('main');
+  document.querySelectorAll('nav button').forEach((b, j) => b.classList.toggle('on', j === i));
+  main.innerHTML = '';
+  const t = el('div', 'title');
+  t.append(el('h2', '', `${d.code} · ${d.name}`), el('span', '', `Người dùng: ${d.role} · Bộ lọc: ${d.filt}`));
+  main.append(t);
+  const k = el('div', 'kpis');
+  d.kpis.forEach(x => {
+    const cls = x.bad === true ? 'bad' : x.bad === false ? 'good' : '';
+    k.append(el('div', 'kpi', `<div class="v ${cls}">${fmt(x.value, x.fmt)}</div><div class="l">${x.label}</div>`));
+  });
+  main.append(k);
+  const g = el('div', 'grid');
+  d.charts.forEach((c, j) => {
+    const card = el('div', 'card' + (c.wide ? ' wide' : ''));
+    card.append(el('h3', '', `${'①②③④⑤⑥'[j]} ${c.title}`));
+    if (c.type === 'table' || c.type === 'heat') card.append(tableOf(c));
+    else { const box = el('div', 'chart'), cv = el('canvas'); box.append(cv); card.append(box); charts.push(new Chart(cv, chartOf(c))); }
+    g.append(card);
+  });
+  main.append(g);
+  main.append(el('p', 'note', 'Màu chữ đỏ / xanh trên thẻ KPI: so với ngưỡng cảnh báo trong bảng KPI (VD: % giao trễ &gt; 10%, điểm đánh giá &lt; 4, AOV &lt; 125 BRL). Rê chuột lên biểu đồ để xem số chi tiết.'));
+  try { localStorage.setItem('tab', i); } catch (e) {}
+}
+
+function tableOf(c) {
+  const wrap = el('div', 'scroll'), tb = el('table');
+  const fs = c.fmt || 'n';
+  let h = '<tr><th></th>' + c.series.map(s => `<th>${s.name}</th>`).join('') + '</tr>';
+  // bảng nhiệt: tô nền theo giá trị (trắng → xanh)
+  const nums = c.type === 'heat' ? c.series.slice(c.skip0 ? 1 : 0).flatMap(s => s.values).filter(v => v !== null) : [];
+  const max = nums.length ? Math.max(...nums) : 1;
+  c.labels.forEach((lab, r) => {
+    h += `<tr><td>${lab}</td>` + c.series.map((s, j) => {
+      const v = s.values[r], f = Array.isArray(fs) ? fs[j] : fs;
+      let style = '', cls = '';
+      if (c.type === 'heat' && v !== null && !(c.skip0 && j === 0)) {
+        const a = Math.min(v / max, 1);
+        style = `background: rgba(68,114,196,${(a * 0.85).toFixed(2)}); color: ${a > .55 ? '#fff' : 'inherit'}`;
+      }
+      if (c.warn_col === j && typeof v === 'number') cls = (c.title.includes('giao trễ') ? v > .1 : v < -.1) ? 'bad' : (c.title.includes('giao trễ') ? '' : v > .1 ? 'good' : '');
+      if (f === 't' && typeof v === 'string') cls = v.startsWith('Vượt') ? 'bad' : v === 'Đạt' ? 'good' : '';
+      return `<td class="${cls}" style="${style}">${fmt(v, f)}</td>`;
+    }).join('') + '</tr>';
+  });
+  tb.innerHTML = h; wrap.append(tb); return wrap;
+}
+
+function chartOf(c) {
+  const f = c.fmt || 'n';
+  const base = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                 plugins: { legend: { position: 'top' }, tooltip: tip(f) } };
+  const grid = { color: '#EDEDED' };
+  if (c.type === 'donut') return { type: 'doughnut', data: { labels: c.labels, datasets: [{ data: c.values, backgroundColor: PALETTE, borderColor: '#fff' }] },
+    options: { ...base, cutout: '58%', interaction: {}, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: x => {
+      const s = x.dataset.data.reduce((a, b) => a + b, 0); return `${x.label}: ${fmt(x.raw, f)} (${fmt(x.raw / s, 'p')})`; } } } } } };
+  if (c.type === 'bar' || c.type === 'hbar' || c.type === 'line') {
+    const horiz = c.type === 'hbar', line = c.type === 'line';
+    const ds = c.series ? c.series.map((s, j) => ({ label: s.name, data: s.values, backgroundColor: PALETTE[j] }))
+                        : [{ label: c.title.split(' ')[0], data: c.values, backgroundColor: c.values.map(v => v < 0 ? PALETTE[5] : PALETTE[0]),
+                             borderColor: PALETTE[0], borderWidth: line ? 2 : 0, pointRadius: line ? 2 : 0 }];
+    return { type: line ? 'line' : 'bar', data: { labels: c.labels, datasets: ds },
+      options: { ...base, indexAxis: horiz ? 'y' : 'x', plugins: { ...base.plugins, legend: { display: !!c.series } },
+        scales: { [horiz ? 'x' : 'y']: { grid, ticks: axisFmt(f) }, [horiz ? 'y' : 'x']: { grid: { display: false } } } } };
+  }
+  if (c.type === 'stack') return { type: 'bar', data: { labels: c.labels,
+      datasets: c.series.map((s, j) => ({ label: s.name, data: s.values, backgroundColor: NAMED[s.name] || PALETTE[j] })) },
+    options: { ...base, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid, ticks: axisFmt(f), max: f === 'p' ? 1 : undefined } } } };
+  // combo / pareto / line2: series 0 = cột (hoặc đường trái), series 1 = đường
+  const fs = Array.isArray(f) ? f : [f, c.type === 'pareto' ? 'p' : f];
+  const right = c.dual || c.type === 'pareto' || c.type === 'line2';
+  const s0 = c.series[0], s1 = c.series[1];
+  return { type: 'bar', data: { labels: c.labels, datasets: [
+      { type: c.type === 'line2' ? 'line' : 'bar', label: s0.name, data: s0.values, backgroundColor: PALETTE[0], borderColor: PALETTE[0],
+        borderWidth: c.type === 'line2' ? 2 : 0, pointRadius: 2, order: 2, yAxisID: 'y' },
+      { type: 'line', label: s1.name, data: s1.values, borderColor: PALETTE[1], backgroundColor: PALETTE[1], borderWidth: 2,
+        pointRadius: 2, order: 1, yAxisID: right ? 'y1' : 'y' } ] },
+    options: { ...base, plugins: { ...base.plugins, tooltip: tip(fs) }, scales: {
+      x: { grid: { display: false } },
+      y: { grid, ticks: axisFmt(fs[0]), beginAtZero: c.type !== 'line2' },
+      ...(right ? { y1: { position: 'right', grid: { display: false }, ticks: axisFmt(fs[1]), max: c.type === 'pareto' ? 1 : undefined } } : {}) } } };
+}
+
+const nav = document.getElementById('nav');
+DASH.forEach((d, i) => { const b = el('button', '', d.code); b.title = d.name; b.onclick = () => render(i); nav.append(b); });
+let start = 0; try { start = +localStorage.getItem('tab') || 0; } catch (e) {}
+render(start < DASH.length ? start : 0);
+</script>
+</body>
+</html>
