@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olist – Phần mở rộng: Lakehouse &amp; AI</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --navy: #1F3864; --blue: #4472C4; --orange: #ED7D31; --red: #C00000; --green: #2E7D32; --teal: #138A8A;
+    --tile: #DDEBF7; --tile-line: #9DC3E6; --line: #BFBFBF; --bg: #F2F2F2; --text: #262626; --muted: #595959; --warm: #FFF4E5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 Calibri, "Segoe UI", Arial, sans-serif; }
+  a { color: var(--blue); }
+  header { background: var(--navy); color: #fff; padding: 14px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; align-items: center; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
+  header p { margin: 2px 0 0; font-size: 13px; color: #D9E1F2; }
+  header a { color: #fff; border: 1px solid #8EA9DB; padding: 6px 12px; text-decoration: none; font-size: 13px; white-space: nowrap; }
+  header a:hover { background: #2F4B7C; }
+  nav { background: #fff; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; padding: 0 16px; position: sticky; top: 0; z-index: 20; }
+  nav button { border: 0; background: none; padding: 11px 14px; font: inherit; font-size: 13.5px; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+  nav button:hover { color: var(--navy); }
+  nav button.on { color: var(--navy); font-weight: 700; border-bottom-color: var(--blue); }
+  main { max-width: 1400px; margin: 0 auto; padding: 16px; }
+  .title { background: var(--navy); color: #fff; padding: 10px 16px; }
+  .title h2 { margin: 0; font-size: 18px; }
+  .title span { font-size: 13px; color: #D9E1F2; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 10px 0 12px; }
+  .kpi { background: var(--tile); border: 1px solid var(--tile-line); padding: 10px 12px; text-align: center; }
+  .kpi .v { font-size: 24px; font-weight: 700; color: var(--navy); }
+  .kpi .l { font-size: 12.5px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .card { background: #fff; border: 1px solid var(--line); padding: 10px 12px 12px; min-width: 0; }
+  .card.wide { grid-column: 1 / -1; }
+  .card h3 { margin: 0 0 8px; font-size: 14px; color: var(--navy); text-align: center; }
+  .card p, .card li { font-size: 13.5px; }
+  .chart { position: relative; height: 290px; }
+  .chart.tall { height: 560px; }
+  .scroll { overflow: auto; max-height: 360px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { background: var(--navy); color: #fff; font-weight: 600; padding: 5px 7px; text-align: left; position: sticky; top: 0; }
+  td { padding: 4px 7px; border-bottom: 1px solid #E7E6E6; vertical-align: top; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  tr:nth-child(even) td { background: #F7F9FC; }
+  td.good { color: var(--green); font-weight: 600; } td.bad { color: var(--red); font-weight: 600; }
+  .insight { margin-top: 10px; background: var(--warm); border: 1px solid #F4B183; padding: 8px 12px; font-size: 13.5px; }
+  .insight b:first-child { color: #C55A11; }
+  pre { margin: 0; background: #F7F9FC; border: 1px solid #E1E7F0; padding: 10px; font: 12px/1.45 Consolas, "Courier New", monospace; overflow: auto; max-height: 420px; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; justify-content: center; }
+  .flow .st { flex: 1 1 150px; border-radius: 6px; padding: 10px; font-size: 12.5px; }
+  .flow .st b { display: block; font-size: 15px; margin-bottom: 4px; }
+  .flow .ar { align-self: center; color: var(--blue); font-size: 22px; font-weight: 700; }
+  .ai-box { margin: 10px auto 0; max-width: 760px; border-radius: 6px; padding: 10px; background: var(--tile); border: 1px dashed var(--blue); text-align: center; font-size: 13px; }
+  textarea { width: 100%; min-height: 86px; font: 15px/1.4 Calibri, "Segoe UI", Arial, sans-serif; padding: 10px; border: 1px solid var(--line); resize: vertical; }
+  .ex { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .ex button { border: 1px solid var(--tile-line); background: #fff; padding: 5px 10px; font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+  .ex button:hover { background: var(--tile); }
+  .ex button small { display: block; color: var(--muted); }
+  .verdict { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .verdict .big { font-size: 34px; font-weight: 700; min-width: 120px; }
+  .gauge { flex: 1 1 260px; height: 16px; background: linear-gradient(90deg, #2E7D32, #FFC000 50%, #C00000); position: relative; border-radius: 8px; }
+  .gauge i { position: absolute; top: -6px; width: 4px; height: 28px; background: #000; border-radius: 2px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { padding: 3px 9px; border-radius: 12px; font-size: 12.5px; border: 1px solid; }
+  .chip.neg { background: #FBEAEA; border-color: #E6A1A1; color: #8B1A1A; }
+  .chip.pos { background: #E8F5EC; border-color: #9CCFAA; color: #1E5E2E; }
+  .muted { color: var(--muted); font-size: 12.5px; }
+  ul.files li { margin: 4px 0; }
+  img.fit { width: 100%; height: auto; display: block; }
+  .note { font-size: 12px; color: var(--muted); margin-top: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .chart.tall { height: 640px; } header { padding: 12px 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Phần mở rộng – Lakehouse cho dữ liệu bán cấu trúc &amp; không cấu trúc · Ứng dụng AI</h1>
+    <p>Đồ án Kho dữ liệu &amp; BI · Olist Brazilian E-commerce · Số liệu lấy từ notebook N6, N7 (chạy trên máy, kết quả lưu sẵn)</p>
+  </div>
+  <a href="index.html">← Về bộ 8 dashboard</a>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="mo_rong_data.js"></script>
+<script>
+// ======================================================================= tiện ích
+Chart.defaults.font.family = 'Calibri, "Segoe UI", Arial, sans-serif';
+Chart.defaults.color = '#595959';
+Chart.defaults.animation = false;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+const C = { navy: '#1F3864', blue: '#4472C4', orange: '#ED7D31', red: '#C00000', green: '#2E7D32', grey: '#A5A5A5', gold: '#FFC000', purple: '#7A5195', teal: '#138A8A' };
+const REG = { 'Đông Nam': C.blue, 'Miền Nam': C.green, 'Trung Tây': C.orange, 'Đông Bắc': C.red, 'Miền Bắc': C.grey };
+const GH = 'https://github.com/Thanh-2312/OlistDashboard/blob/main/mo_rong/';
+const nf = (x, d = 0) => (x == null || Number.isNaN(+x)) ? '–' : (+x).toLocaleString('vi-VN', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (x, d = 0) => nf(x * 100, d) + '%';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+const main = document.getElementById('main');
+let charts = [];
+
+function title(h, sub) { main.append(el('div', 'title', `<h2>${esc(h)}</h2>${sub ? `<span>${esc(sub)}</span>` : ''}`)); }
+function kpis(list) { const k = el('div', 'kpis'); list.forEach(([v, l]) => k.append(el('div', 'kpi', `<div class="v">${v}</div><div class="l">${l}</div>`))); main.append(k); }
+function grid() { const g = el('div', 'grid'); main.append(g); return g; }
+function card(g, h, wide) { const c = el('div', 'card' + (wide ? ' wide' : '')); if (h) c.append(el('h3', '', esc(h))); g.append(c); return c; }
+function insight(c, msg) { c.append(el('div', 'insight', `<b>Ý nghĩa →</b> ${msg}`)); }
+function table(c, head, rows, numCols = [], cls) {
+  const w = el('div', 'scroll'), t = el('table');
+  t.append(el('tr', '', head.map((h, j) => `<th class="${numCols.includes(j) ? 'n' : ''}">${esc(h)}</th>`).join('')));
+  rows.forEach((r, i) => t.append(el('tr', '', r.map((v, j) => `<td class="${numCols.includes(j) ? 'n' : ''} ${cls ? cls(i, j, v) : ''}">${v}</td>`).join(''))));
+  w.append(t); c.append(w);
+}
+function chart(c, cfg, tall) {
+  const box = el('div', 'chart' + (tall ? ' tall' : '')), cv = el('canvas');
+  box.append(cv); c.append(box);
+  cfg.options = Object.assign({ responsive: true, maintainAspectRatio: false }, cfg.options || {});
+  charts.push(new Chart(cv, cfg));
+}
+
+// ======================================================================= mô hình cảm xúc chạy trong trình duyệt
+const M = MR.model, VOC = new Map(Object.entries(M.vocab)), STOPS = new Set(M.stop);
+const GLOSS = Object.fromEntries(MR.ai.words.map(r => [r[1], r[3]]));
+function normText(s) {   // giống olist_utils.norm_text: bỏ nháy, bỏ dấu, chữ thường, chỉ giữ a-z 0-9
+  return s.replace(/['’`´]/g, '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function analyze(text) {
+  const toks = normText(text).split(' ').filter(w => w.length >= 2 && !STOPS.has(w));
+  const grams = toks.concat(toks.slice(0, -1).map((w, i) => w + ' ' + toks[i + 1]));
+  const cnt = new Map();
+  grams.forEach(g => { if (VOC.has(g)) cnt.set(g, (cnt.get(g) || 0) + 1); });
+  const w = [...cnt].map(([g, k]) => [g, (1 + Math.log(k)) * VOC.get(g)[0]]);
+  const nrm = Math.sqrt(w.reduce((s, [, x]) => s + x * x, 0)) || 1;
+  const contrib = w.map(([g, x]) => [g, VOC.get(g)[1] * x / nrm]);
+  const z = M.b + contrib.reduce((s, [, x]) => s + x, 0);
+  return { p: 1 / (1 + Math.exp(-z)), contrib, known: cnt.size, norm: toks.join(' ') };
+}
+const SELFTEST = M.examples.every(([t, , p]) => Math.abs(analyze(t).p - p) < 1e-3);
+console.log('Kiểm tra mô hình JS so với Python:', SELFTEST ? 'khớp' : 'LỆCH', M.examples.map(([t, , p]) => [p, +analyze(t).p.toFixed(4)]));
+
+// ======================================================================= các trang
+const PAGES = [
+  ['Tổng quan', pageOverview], ['Lakehouse · API', pageApi], ['Lakehouse · JSON lồng nhau', pageJson], ['Lakehouse · Văn bản', pageText],
+  ['AI · Thử đọc cảm xúc', pageSentiment], ['AI · Chủ đề & dự báo trễ', pageThemes], ['Mã nguồn & dữ liệu', pageCode]];
+
+function pageOverview() {
+  title('Hai hướng mở rộng đi sâu', 'Hướng 1: Lakehouse xử lý dữ liệu bán cấu trúc & không cấu trúc (N6) · Hướng 2: Ứng dụng AI trong khai thác dữ liệu (N7)');
+  const ai = MR.ai, top = ai.lift[0];
+  kpis([['3 API', `dữ liệu thật · ${nf(MR.api.reduce((s, r) => s + r[3], 0))} bản ghi JSON`], [nf(MR.rec[0][2]), 'đơn hàng dạng tài liệu JSON lồng nhau'],
+        ['+' + MR.added.length + ' trường', 'Delta tự thêm khi API đổi phiên bản'], [nf(MR.tprofile[0][1]), 'bình luận được làm sạch, che dữ liệu cá nhân'],
+        [pct(ai.metrics[3][1]), 'AI đọc đúng cảm xúc (dữ liệu chưa thấy)'], ['×' + nf(top[7], 1), 'đơn rủi ro cao nhất trễ hơn mức chung']]);
+  const g = grid();
+  const c = card(g, 'Kiến trúc mở rộng: 10 job L13 → L22 nối tiếp lakehouse 12 job của N5', true);
+  const ST = [['Landing', '#FDF1E4', 'File JSON gốc từ 3 API · 25 file JSON Lines đơn hàng'], ['Bronze', '#EAF2FB', 'Lưu nguyên văn · nạp lũy đẳng (MERGE) · mỗi lần nạp một phiên bản'],
+              ['Silver', '#E4F4F4', 'Hợp đồng dữ liệu v1/v2 · cách ly dòng lỗi · che dữ liệu cá nhân'], ['Gold', '#E8F5EC', 'Mart tỷ giá, dân số · văn bản + chỉ mục từ · kết quả AI'],
+              ['Publish', '#FBEAEA', 'Parquet cho Power BI (cùng cách job L12)']];
+  const f = el('div', 'flow');
+  ST.forEach(([h, bg, t], i) => { f.append(el('div', 'st', `<b>${h}</b>${t}`)); f.lastChild.style.background = bg; if (i < ST.length - 1) f.append(el('div', 'ar', '→')); });
+  c.append(f);
+  c.append(el('div', 'ai-box', '<b>AI (notebook N7)</b> đọc Silver / Gold → mô hình cảm xúc, chủ đề phàn nàn, rủi ro giao trễ → <b>ghi ngược vào Gold</b> (gold/review_ai, gold/order_late_risk)'));
+  const c2 = card(g, 'Vấn đề → giải pháp trong lakehouse → bằng chứng đo được', true);
+  table(c2, ['Loại dữ liệu', 'Vấn đề', 'Giải pháp lakehouse', 'Bằng chứng'], MR.caps.map(r => r.map(esc)));
+  const c3 = card(g, 'Ba bài toán AI – kết quả trên dữ liệu chưa từng thấy', true);
+  table(c3, ['Bài toán', 'Phương pháp', 'Kết quả đo được', 'Giá trị nghiệp vụ'], ai.summary.map(r => r.map(esc)));
+}
+
+function pageApi() {
+  title('Dữ liệu bán cấu trúc từ 3 API công khai của Brazil', 'API → Landing (file gốc) → Bronze (nguyên văn, MERGE lũy đẳng) → Silver (ép kiểu) → Gold (nối với kho)');
+  const g = grid();
+  let c = card(g, 'Các lời gọi API (lưu nguyên văn vào vùng hạ cánh)');
+  table(c, ['Nguồn', 'Dữ liệu', 'Bản ghi', 'KB'], MR.api.map(r => [esc(r[0]), `<a href="${esc(r[5])}" target="_blank" rel="noopener">${esc(r[2])}</a>`, nf(r[3]), nf(r[4], 1)]), [2, 3]);
+  insight(c, `nạp lại cùng ${MR.idem.length} file: thêm <b>${MR.idem.reduce((s, r) => s + r[3], 0)}</b> dòng – MERGE theo mã băm file nên chạy lại không trùng.`);
+  c = card(g, '"Bẫy" dữ liệu gặp thật và cách xử lý ở Silver');
+  table(c, ['API', 'Vấn đề', 'Số lượng', 'Xử lý'], MR.quirks.map(r => [esc(r[0]), esc(r[1]), nf(r[2]), esc(r[3])]), [2]);
+  c = card(g, 'Tỷ giá USD/BRL hằng ngày – API Ngân hàng Trung ương Brazil (SGS 1)', true);
+  chart(c, { type: 'line', data: { labels: MR.fx.d, datasets: [{ label: 'BRL cho 1 USD', data: MR.fx.r, borderColor: C.blue, pointRadius: 0, borderWidth: 1.6 }] },
+             options: { plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { maxTicksLimit: 14 } } } } });
+  insight(c, `ngày nghỉ không có tỷ giá (${nf(MR.fx.filled.reduce((a, b) => a + b, 0))} ngày) được lấy tỷ giá ngày làm việc trước đó. Tỷ giá bình quân T1–8: 2017 = ${nf(MR.rate[2017], 2)}, 2018 = ${nf(MR.rate[2018], 2)} → BRL mất giá ${pct(MR.rate[2018] / MR.rate[2017] - 1)}.`);
+  c = card(g, 'Tăng trưởng doanh thu T1–8/2018 so cùng kỳ: BRL và USD');
+  chart(c, { type: 'bar', data: { labels: MR.growth.map(r => 'Đo bằng ' + r[0]), datasets: [{ data: MR.growth.map(r => r[3] * 100), backgroundColor: [C.blue, C.orange] }] },
+             options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => '+' + nf(x.raw) + '%' } } }, scales: { y: { ticks: { callback: v => v + '%' } } } } });
+  insight(c, `quy đổi từng dòng bán theo tỷ giá <b>đúng ngày đặt hàng</b>: +${pct(MR.growth[0][3])} theo BRL nhưng chỉ +${pct(MR.growth[1][3])} theo USD.`);
+  c = card(g, 'Doanh thu theo tháng: BRL và quy đổi USD');
+  chart(c, { type: 'line', data: { labels: MR.monthly.map(r => r[0]), datasets: [
+    { label: 'Doanh thu (BRL)', data: MR.monthly.map(r => r[1]), borderColor: C.blue, backgroundColor: C.blue, yAxisID: 'y' },
+    { label: 'Doanh thu (USD)', data: MR.monthly.map(r => r[2]), borderColor: C.orange, backgroundColor: C.orange, yAxisID: 'y1' }] },
+    options: { interaction: { mode: 'index', intersect: false }, scales: { y: { ticks: { callback: v => nf(v / 1e6, 1) + ' tr' } }, y1: { position: 'right', grid: { display: false }, ticks: { callback: v => nf(v / 1e6, 1) + ' tr' } } } } });
+  c = card(g, `Số đơn trên 100.000 dân theo bang (01/2017–08/2018) – dân số từ API IBGE · cả nước: ${nf(MR.nat)}`, true);
+  const s = MR.states.slice().sort((a, b) => b[6] - a[6]);
+  chart(c, { type: 'bar', data: { labels: s.map(r => r[0] + ' – ' + r[1]), datasets: [{ data: s.map(r => r[6]), backgroundColor: s.map(r => REG[r[2]]) }] },
+             options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => {
+               const r = s[x.dataIndex]; return [`${nf(r[6], 1)} đơn / 100.000 dân (${r[2]})`, `Dân số ${nf(r[3])} · ${nf(r[5])} đơn · chỉ số ${nf(r[8])} (cả nước = 100)`]; } } } } } }, true);
+  insight(c, 'màu theo vùng: <span style="color:' + C.blue + '">■</span> Đông Nam <span style="color:' + C.green + '">■</span> Miền Nam <span style="color:' + C.orange + '">■</span> Trung Tây <span style="color:' + C.red + '">■</span> Đông Bắc <span style="color:' + C.grey + '">■</span> Miền Bắc. São Paulo gấp đôi cả nước, Amazonas chỉ ' + nf(s[s.length - 1][6], 1) + ' – dư địa mở rộng ở Bắc / Đông Bắc.');
+  c = card(g, 'Kiểm tra chất lượng tên thành phố bằng danh mục 5.570 thành phố IBGE');
+  table(c, ['Nguồn', 'Số dòng', 'Tên khác nhau', 'Khớp IBGE', 'Tỷ lệ'], MR.city.map(r => [esc(r[0]), nf(r[1]), nf(r[2]), nf(r[3]), pct(r[4], 1)]), [1, 2, 3, 4]);
+  c.append(el('p', 'muted', 'Tên không khớp nhiều nhất: ' + MR.unmatched.slice(0, 8).map(r => `${esc(r[1])} (${r[2]}, ${r[3]})`).join(', ') + ' → sai chính tả / tên cũ / tên quận, cần thêm quy tắc làm sạch.'));
+  c = card(g, 'Đối chiếu ngày lễ của dim_date với BrasilAPI');
+  table(c, ['Kết quả', 'Số ngày'], Object.entries(MR.holiday).map(([k, v]) => [esc(k), nf(v)]), [1]);
+  insight(c, 'dim_date (tự tính bằng quy tắc Phục sinh) khớp toàn bộ ngày lễ của API; API có thêm Chủ nhật Phục sinh – vốn là ngày nghỉ cuối tuần.');
+}
+
+function pageJson() {
+  title('Đơn hàng dạng tài liệu JSON lồng nhau – API đổi phiên bản từ 01/2018',
+        '99.441 đơn thật được đóng gói lại thành JSON để mô phỏng webhook của sàn (giá trị thật, hình dạng mô phỏng) · mỗi tháng một file JSON Lines');
+  const g = grid();
+  let c = card(g, 'API v1 – đơn đặt trước 2018'); c.append(el('pre', '', esc(MR.v1)));
+  c = card(g, 'API v2 – từ 01/2018: dời địa chỉ, thêm delivery{} và items[].product{}, tiền dạng chữ "31,90"'); c.append(el('pre', '', esc(MR.v2)));
+  c = card(g, 'Lược đồ bảng silver/order_events qua từng lần nạp (mỗi điểm = một phiên bản Delta)', true);
+  chart(c, { type: 'line', data: { labels: MR.sv.map(r => r[1].slice(7, 14)), datasets: [{ label: 'Số trường lá', data: MR.sv.map(r => r[4]), stepped: true, borderColor: C.blue,
+             pointBackgroundColor: MR.sv.map(r => r[2] === 'v2' ? C.orange : C.blue), pointRadius: 4 }] },
+             options: { plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: x => `Phiên bản ${MR.sv[x.dataIndex][0]} · API ${MR.sv[x.dataIndex][2]} · ${nf(MR.sv[x.dataIndex][3])} đơn` } } },
+                        scales: { y: { suggestedMin: 20, suggestedMax: 38 } } } });
+  insight(c, `<b>schema evolution</b>: khi gặp v2, Delta tự thêm ${MR.added.length} trường (${MR.added.map(esc).join(', ')}) mà không phải dựng lại bảng.`);
+  c = card(g, 'Schema enforcement + ACID và cách ly dòng lỗi');
+  const enf = MR.caps.find(r => r[1].startsWith('Kiểu dữ liệu'));
+  c.append(el('p', '', `Thử ghi lô v2 khi tiền còn là chữ kiểu Brazil (<code>"1299,00"</code>): Delta <b>từ chối cả lô</b> – ${esc(enf ? enf[3] : '')}, không có dòng nào ghi dở. Sau khi áp hợp đồng dữ liệu (đổi "58,90" → 58.9) lô mới được ghi.`));
+  table(c, ['File', 'Dòng', 'Lý do cách ly', 'Đầu dòng'], MR.quar.map(r => [esc(r[0]), nf(r[1]), esc(r[2]), `<code>${esc(r[3])}</code>`]), [1]);
+  c = card(g, 'Làm phẳng bằng DuckDB UNNEST rồi đối soát với bảng Silver gốc');
+  table(c, ['Chỉ số', 'Silver gốc', 'Từ JSON', 'Khớp'], MR.rec.map(r => [esc(r[0]), nf(r[1], r[1] % 1 ? 2 : 0), nf(r[2], r[2] % 1 ? 2 : 0), r[3] ? '✓' : '✗']), [1, 2, 3], (i, j) => j === 3 ? 'good' : '');
+  c = card(g, 'Cùng một câu hỏi (doanh thu theo bang, 2018) ở 3 vùng – thời gian truy vấn');
+  chart(c, { type: 'bar', data: { labels: MR.bench.map(r => r[0].split(' (')[0]), datasets: [{ data: MR.bench.map(r => r[1]), backgroundColor: [C.orange, C.teal, C.blue] }] },
+             options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => nf(x.raw, 1) + ' ms' } } }, scales: { x: { title: { display: true, text: 'mili giây (trung vị 5 lần)' } } } } });
+  insight(c, `cả 3 cách cho cùng ${nf(MR.bench[0][3])} BRL; JSON thô linh hoạt nhưng chậm gấp ${nf(MR.bench[0][1] / MR.bench[2][1], 1)} lần Gold.`);
+  c = card(g, 'Dung lượng: JSON thô → Delta (nén cột)');
+  chart(c, { type: 'bar', data: { labels: MR.storage.map(r => r[0]), datasets: [{ data: MR.storage.map(r => r[1]), backgroundColor: [C.orange, C.blue, C.teal, C.green] }] },
+             options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => nf(x.raw, 1) + ' MB' } } } } });
+}
+
+function pageText() {
+  title('Văn bản đánh giá – dữ liệu không cấu trúc', 'Bronze giữ bản gốc (quyền hạn chế) → Silver làm sạch + che dữ liệu cá nhân → Gold nối với fact_review / fact_order + chỉ mục từ');
+  const P = Object.fromEntries(MR.tprofile);
+  kpis(MR.tprofile.slice(0, 5).map(r => [nf(r[1]), esc(r[0])]).concat([[nf(MR.tprofile.slice(5).reduce((s, r) => s + r[1], 0)), 'chuỗi dữ liệu cá nhân đã che']]));
+  const g = grid();
+  let c = card(g, 'Tỷ lệ bình luận nhắc tới giao hàng (tìm qua chỉ mục từ) theo trạng thái giao');
+  chart(c, { type: 'bar', data: { labels: MR.mention.map(r => r[0]), datasets: [
+    { label: '% bình luận nhắc giao hàng', data: MR.mention.map(r => r[2]), backgroundColor: MR.mention.map(r => r[0] === 'Đúng hạn' ? C.green : r[0] === 'Trễ hạn' ? C.red : C.grey) }] },
+    options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => [`${nf(x.raw, 1)}% bình luận`, `điểm TB ${nf(MR.mention[x.dataIndex][3], 2)} · ${nf(MR.mention[x.dataIndex][1])} bình luận`] } } },
+               scales: { y: { max: 100, ticks: { callback: v => v + '%' } } } } });
+  c = card(g, 'Đơn hệ thống ghi "đã giao" nhưng khách viết "chưa nhận được"');
+  table(c, ['Trạng thái giao (hệ thống)', 'Số đơn', 'Điểm TB'], MR.dispute.map(r => [esc(r[0]), nf(r[1]), nf(r[2], 2)]), [1, 2]);
+  insight(c, `<b>${nf(MR.dispute.find(r => r[0] === 'Đúng hạn')[1])}</b> đơn được ghi giao đúng hạn nhưng bình luận nói chưa nhận hàng – tranh chấp giao hàng mà dữ liệu bảng không thấy.`);
+  c = card(g, 'Các bước xử lý văn bản', true);
+  c.append(el('ul', '', ['Ghép tiêu đề + nội dung, chuẩn hóa Unicode (NFC), bỏ xuống dòng / tab, gộp khoảng trắng',
+    'Che dữ liệu cá nhân bằng biểu thức chính quy: email, link, CPF, số điện thoại, dãy số ≥ 6 chữ số (số hóa đơn) → [PHONE], [URL], [DOC_NO]…',
+    'Đặc trưng: số chữ, số từ, emoji, dấu "!", tỷ lệ chữ hoa, câu ngắn chung chung, mã băm để phát hiện câu trùng',
+    'Chỉ mục ngược (từ → bình luận) trong gold/review_token_index: biến văn bản tự do thành dữ liệu tra cứu bằng SQL',
+    'Silver không chứa dữ liệu cá nhân; bản gốc chỉ nằm ở Bronze'].map(x => `<li>${esc(x)}</li>`).join('')));
+}
+
+function pageSentiment() {
+  title('AI đọc cảm xúc bình luận – thử trực tiếp', `TF-IDF (từ + cụm 2 từ) + hồi quy logistic · học trên ${nf(M.n)} bình luận có sao · mô hình chạy ngay trong trình duyệt, không gửi dữ liệu đi đâu`);
+  const g = grid();
+  const c = card(g, 'Gõ một bình luận (tiếng Bồ Đào Nha) hoặc chọn ví dụ', true);
+  const ta = el('textarea'); ta.placeholder = 'Ví dụ: O produto chegou antes do prazo, muito bom!'; c.append(ta);
+  const ex = el('div', 'ex');
+  M.examples.forEach(([t, vn]) => { const b = el('button', '', `${esc(t)}<small>${esc(vn)}</small>`); b.onclick = () => { ta.value = t; run(); }; ex.append(b); });
+  c.append(ex);
+  const out = el('div'); c.append(out);
+  c.append(el('p', 'muted', `Kiểm tra: bản JavaScript ${SELFTEST ? 'cho đúng kết quả' : 'LỆCH so với'} bản Python (scikit-learn) trên các ví dụ. Từ không có trong từ điển của mô hình được bỏ qua.`));
+  function run() {
+    const t = ta.value.trim();
+    if (!t) { out.innerHTML = ''; return; }
+    const r = analyze(t), neg = r.p >= 0.5;
+    const top = r.contrib.slice().sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 12);
+    out.innerHTML = `<div class="verdict"><div class="big" style="color:${neg ? C.red : C.green}">${pct(r.p)}</div>
+      <div><b>xác suất là lời chê</b> → AI kết luận: <b style="color:${neg ? C.red : C.green}">${neg ? 'TIÊU CỰC' : 'TÍCH CỰC'}</b><br>
+      <span class="muted">Sau chuẩn hóa: “${esc(r.norm) || '–'}” · ${r.known} từ / cụm từ mô hình biết</span></div>
+      <div class="gauge"><i style="left:calc(${(r.p * 100).toFixed(1)}% - 2px)"></i></div></div>
+      <div class="chips">${top.map(([w, v]) => `<span class="chip ${v > 0 ? 'neg' : 'pos'}">${esc(w)}${GLOSS[w] ? ' (' + esc(GLOSS[w]) + ')' : ''} ${v > 0 ? '+' : ''}${nf(v, 2)}</span>`).join('')}</div>
+      <p class="muted">Đỏ = đẩy về chê, xanh = đẩy về khen; con số là mức đóng góp của từ vào điểm của mô hình.</p>`;
+  }
+  ta.oninput = run;
+  ta.value = M.examples[2][0]; run();
+
+  const ai = MR.ai;
+  let k = card(g, 'Kiểm tra trên bình luận từ 04/2018 (mô hình chưa từng thấy)');
+  table(k, ['Cách làm', 'Đúng', 'Precision', 'Recall', 'F1 tiêu cực', 'AUC'],
+        ai.metrics.map(r => [esc(r[0]), pct(r[1]), nf(r[2], 2), nf(r[3], 2), nf(r[4], 2), r[5] == null ? '–' : nf(r[5], 2)]), [1, 2, 3, 4, 5], (i, j) => i === 3 && j > 0 ? 'good' : '');
+  insight(k, `AI hơn quy tắc 11 từ khóa ${nf((ai.metrics[3][1] - ai.metrics[1][1]) * 100)} điểm % độ chính xác; F1 lớp tiêu cực ${nf(ai.metrics[3][4], 2)} so với ${nf(ai.metrics[1][4], 2)}.`);
+  k = card(g, 'Ma trận nhầm lẫn'); k.append(el('img', 'fit')); k.lastChild.src = 'mo_rong/charts/n7_sentiment_confusion.png'; k.lastChild.alt = 'Ma trận nhầm lẫn';
+  k = card(g, 'Từ ngữ mô hình dùng để nhận ra lời chê / khen (trọng số)', true);
+  const W = ai.words.filter(r => r[0] === 'Đẩy về tiêu cực').slice(0, 12).concat(ai.words.filter(r => r[0] === 'Đẩy về tích cực').slice(0, 12));
+  chart(k, { type: 'bar', data: { labels: W.map(r => r[1] + (r[3] ? ' (' + r[3] + ')' : '')), datasets: [{ data: W.map(r => r[2]), backgroundColor: W.map(r => r[2] > 0 ? C.red : C.green) }] },
+             options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'trọng số (dương = chê, âm = khen)' } } } } }, true);
+  k = card(g, 'Áp dụng cho mọi bình luận: số sao và lời viết có khớp không?');
+  table(k, ['Số sao', 'Bình luận', 'AI: % chê', 'Khen sao, chê lời', 'Chê sao, khen lời'], ai.byscore.map(r => [r[0] + '★', nf(r[1]), pct(r[2]), nf(r[3]), nf(r[4])]), [1, 2, 3, 4]);
+  insight(k, `${nf(ai.byscore.reduce((s, r) => s + r[3], 0))} bình luận 4–5 sao nhưng lời viết là chê → chăm sóc khách hàng liên hệ lại.`);
+  k = card(g, 'Ví dụ "khen sao, chê lời" (đã che dữ liệu cá nhân)');
+  table(k, ['Sao', 'AI: % chê', 'Bình luận'], ai.mismatch.map(r => [r[0] + '★', pct(r[1]), esc(r[2])]), [0, 1]);
+}
+
+function pageThemes() {
+  const ai = MR.ai;
+  title('AI tìm chủ đề phàn nàn và dự báo đơn sắp giao trễ', 'NMF (học không giám sát) trên bình luận 1–2 sao · HistGradientBoosting dự báo lúc bàn giao cho hãng vận chuyển');
+  const g = grid();
+  const th = ai.themes.filter(r => !r[0].startsWith('Khác'));
+  const TC = [C.red, C.orange, C.gold, C.blue, C.purple, C.grey];
+  let c = card(g, 'Nhóm vấn đề trong bình luận 1–2 sao');
+  chart(c, { type: 'bar', data: { labels: th.map(r => r[0]), datasets: [{ data: th.map(r => r[5] * 100), backgroundColor: TC }] },
+             options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => { const r = th[x.dataIndex];
+               return [`${pct(r[5])} bình luận tiêu cực (${nf(r[1])})`, `${pct(r[2])} đơn của nhóm bị giao trễ`, `${pct(r[3])} chưa giao`]; } } } },
+                        scales: { x: { ticks: { callback: v => v + '%' } } } } });
+  const deliv = th.filter(r => /Chưa nhận|Giao chậm|Giao thiếu/.test(r[0])).reduce((s, r) => s + r[5], 0);
+  insight(c, `<b>${pct(deliv)}</b> lời chê liên quan khâu giao hàng.`);
+  c = card(g, 'Số bình luận tiêu cực theo tháng và nhóm vấn đề');
+  const names = th.map(r => r[0]);
+  chart(c, { type: 'line', data: { labels: ai.trend.months, datasets: names.map((n, i) => ({ label: n, data: ai.trend.series[n], backgroundColor: TC[i], borderColor: TC[i], fill: true, pointRadius: 0 })) },
+             options: { interaction: { mode: 'index', intersect: false }, scales: { y: { stacked: true } }, plugins: { legend: { labels: { font: { size: 11 } } } } } });
+  const tot = ai.trend.months.map((m, i) => names.reduce((s, n) => s + ai.trend.series[n][i], 0)), pk = tot.indexOf(Math.max(...tot));
+  insight(c, `đỉnh ${ai.trend.months[pk]} (${nf(tot[pk])} bình luận) trùng đỉnh % giao trễ trên dashboard VC-V610.`);
+  c = card(g, '8 chủ đề NMF tìm được và nhóm vấn đề được gán tự động', true);
+  table(c, ['#', 'Từ đặc trưng (tiếng Bồ Đào Nha, đã bỏ dấu)', 'Nhóm vấn đề', 'Bình luận'], ai.topics.map(r => [r[0], esc(r[1]), esc(r[2]), nf(r[3])]), [0, 3]);
+  const base = ai.lift.reduce((s, r) => s + r[2], 0) / ai.lift.reduce((s, r) => s + r[1], 0);
+  c = card(g, 'Dự báo giao trễ: tỷ lệ trễ thực tế theo nhóm 10% điểm rủi ro (đơn 01–08/2018)');
+  chart(c, { data: { labels: ai.lift.map(r => String(r[0])), datasets: [
+    { type: 'bar', label: '% đơn trễ thực tế', data: ai.lift.map(r => r[3] * 100), backgroundColor: ai.lift.map((r, i) => i === 0 ? C.red : i < 3 ? C.orange : C.blue) },
+    { type: 'line', label: 'Mức chung', data: ai.lift.map(() => base * 100), borderColor: '#000', borderDash: [5, 4], pointRadius: 0 }] },
+    options: { scales: { x: { title: { display: true, text: 'Nhóm 10% đơn (1 = rủi ro cao nhất)' } }, y: { ticks: { callback: v => v + '%' } } },
+               plugins: { tooltip: { callbacks: { afterLabel: x => x.datasetIndex ? '' : `bắt được ${pct(ai.lift[x.dataIndex][5])} số đơn trễ · lift ${nf(ai.lift[x.dataIndex][7], 1)}` } } } } });
+  insight(c, `AUC ${nf(ai.late[2][1], 2)} (quy tắc đơn giản ${nf(ai.late[1][1], 2)}); nhóm 1 trễ <b>${pct(ai.lift[0][3])}</b>, gấp ${nf(ai.lift[0][7], 1)} lần mức chung, chiếm ${pct(ai.lift[0][5])} số đơn trễ.`);
+  c = card(g, 'Đặc trưng quan trọng nhất (AUC giảm khi xáo trộn đặc trưng)');
+  const im = ai.imp.slice(0, 10);
+  chart(c, { type: 'bar', data: { labels: im.map(r => r[1]), datasets: [{ data: im.map(r => r[2]), backgroundColor: C.blue }] },
+             options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: x => 'AUC giảm ' + nf(x.raw, 4) } } } } });
+  c = card(g, 'So với cách làm đơn giản');
+  table(c, ['Mô hình', 'ROC-AUC', 'PR-AUC'], ai.late.map(r => [esc(r[0]), nf(r[1], 2), nf(r[2], 2)]), [1, 2], (i, j) => i === 2 && j > 0 ? 'good' : '');
+  c = card(g, 'Đơn đang vận chuyển có rủi ro trễ cao nhất (danh sách cho bộ phận vận chuyển)');
+  table(c, ['Mã đơn', 'Điểm rủi ro', 'Bang khách', 'Bang người bán', 'Ngày còn lại đến hạn'], ai.watch.map(r => [`<code>${esc(r[0].slice(0, 12))}…</code>`, pct(r[1]), esc(r[2]), esc(r[3]), nf(r[4], 1)]), [1, 4],
+        (i, j, v) => j === 4 && parseFloat(String(v).replace(',', '.')) < 0 ? 'bad' : '');
+}
+
+function pageCode() {
+  title('Mã nguồn & dữ liệu của phần mở rộng', 'Toàn bộ nằm trong thư mục mo_rong/ của repo này');
+  const g = grid();
+  let c = card(g, 'Notebook (đã chạy sẵn kết quả – GitHub hiển thị trực tiếp)');
+  c.append(el('ul', 'files', [['notebooks/N6_Lakehouse_ban_cau_truc_khong_cau_truc.ipynb', 'N6 – 10 job L13 → L22: API, JSON lồng nhau, văn bản'],
+    ['notebooks/N7_AI_khai_thac_du_lieu.ipynb', 'N7 – 3 mô hình AI, ghi kết quả ngược vào Gold']].map(([f, d]) => `<li><a href="${GH + f}" target="_blank" rel="noopener">${esc(f)}</a> – ${esc(d)}</li>`).join('')));
+  c = card(g, 'Mã nguồn');
+  c.append(el('ul', 'files', [['src/N6.py', 'nguồn của notebook N6 (định dạng # %%)'], ['src/N7.py', 'nguồn của notebook N7'],
+    ['src/olist_utils.py', 'hằng số, hàm dùng chung (norm_text, STOP_PT…)'], ['src/make_notebooks.py', 'ghép # %% thành .ipynb và chạy'],
+    ['src/web_mo_rong.py', 'sinh dữ liệu + mô hình cho trang web này']].map(([f, d]) => `<li><a href="${GH + f}" target="_blank" rel="noopener">${esc(f)}</a> – ${esc(d)}</li>`).join('')));
+  c = card(g, 'Mẫu dữ liệu bán cấu trúc (nguyên văn)');
+  c.append(el('ul', 'files', [['du_lieu_mau/bcb__usd_brl_daily.json', 'phản hồi API tỷ giá – số và ngày dạng chữ'],
+    ['du_lieu_mau/ibge_sidra__population_uf.json', 'phản hồi SIDRA – phần tử đầu là dòng tiêu đề'], ['du_lieu_mau/brasilapi__holidays_2017.json', 'ngày lễ 2017'],
+    ['du_lieu_mau/orders_2017-06_mau.jsonl', '40 tài liệu đơn hàng API v1'], ['du_lieu_mau/orders_2018-03_mau.jsonl', '40 tài liệu API v2 + 3 dòng hỏng cố ý ở cuối']]
+    .map(([f, d]) => `<li><a href="mo_rong/${f}" target="_blank" rel="noopener">${esc(f)}</a> – ${esc(d)}</li>`).join('')));
+  c = card(g, 'Chạy lại trên máy');
+  c.append(el('pre', '', esc(`# trong thư mục dự án (sau N1 → N5)
+python _build/make_notebooks.py N6 N7   # khoảng 3 phút; API chỉ gọi lần đầu
+python _build/web_mo_rong.py           # sinh lại mo_rong_data.js + thư mục mo_rong/`)));
+  c.append(el('p', 'muted', 'Công cụ: Delta Lake (deltalake), DuckDB, pandas / pyarrow, requests, scikit-learn, matplotlib, Chart.js. Dữ liệu hồ (≈300 MB) không đưa lên repo; chỉ đưa kết quả và mẫu.'));
+}
+
+// ======================================================================= điều hướng
+const nav = document.getElementById('nav');
+function go(i) {
+  charts.forEach(ch => ch.destroy()); charts = []; main.innerHTML = '';
+  document.querySelectorAll('nav button').forEach((b, k) => b.classList.toggle('on', k === i));
+  PAGES[i][1]();
+  main.append(el('p', 'note', 'Nguồn: notebook N6, N7 của nhóm (dữ liệu Olist công khai trên Kaggle + API công khai: Ngân hàng Trung ương Brazil, IBGE, BrasilAPI). Tỷ lệ làm tròn số nguyên theo quy ước báo cáo.'));
+  history.replaceState(null, '', '#' + (i + 1)); window.scrollTo(0, 0);
+}
+PAGES.forEach(([n], i) => { const b = el('button', '', esc(n)); b.onclick = () => go(i); nav.append(b); });
+go(Math.min(Math.max((parseInt(location.hash.slice(1)) || 1) - 1, 0), PAGES.length - 1));
+</script>
+</body>
+</html>
